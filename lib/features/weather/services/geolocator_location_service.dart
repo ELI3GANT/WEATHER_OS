@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
@@ -84,7 +83,7 @@ class GeolocatorLocationService implements LocationService {
           .get(uri, headers: const <String, String>{'Accept': 'application/json'})
           .timeout(const Duration(seconds: 3));
 
-      if (response.statusCode == HttpStatus.ok) {
+      if (response.statusCode == 200) {
         final dynamic decoded = jsonDecode(response.body);
         if (decoded is Map<String, dynamic>) {
           final city = (decoded['city'] as String?)?.trim();

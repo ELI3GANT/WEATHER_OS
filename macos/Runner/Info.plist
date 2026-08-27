@@ -28,5 +28,9 @@
 	<string>MainMenu</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>WeatherOS uses your location to provide accurate local weather forecasts and live atmospheric telemetry.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>WeatherOS uses your location to provide accurate local weather forecasts and live atmospheric telemetry.</string>
 </dict>
 </plist>
