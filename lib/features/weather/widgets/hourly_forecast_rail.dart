@@ -153,7 +153,7 @@ class _ForecastCell extends StatelessWidget {
                   : null,
             ),
             padding: const EdgeInsets.symmetric(
-              vertical: WeatherSpacing.space2,
+              vertical: 4,
               horizontal: 2,
             ),
             child: Column(
@@ -179,24 +179,30 @@ class _ForecastCell extends StatelessWidget {
                       ? WeatherPalette.textPrimary
                       : WeatherPalette.textSecondary,
                 ),
-                Text(
-                  WeatherFormatters.degrees(forecast.temperature),
-                  style: WeatherType.metricValue.copyWith(
-                    fontSize: WeatherLayout.forecastTemperatureSize,
-                    fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-                    color: active
-                        ? WeatherPalette.textPrimary
-                        : WeatherPalette.textSecondary,
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    WeatherFormatters.degrees(forecast.temperature),
+                    style: WeatherType.metricValue.copyWith(
+                      fontSize: WeatherLayout.forecastTemperatureSize,
+                      fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                      color: active
+                          ? WeatherPalette.textPrimary
+                          : WeatherPalette.textSecondary,
+                    ),
                   ),
                 ),
-                Text(
-                  '${forecast.precipChance}%',
-                  style: WeatherType.label.copyWith(
-                    fontSize: 11,
-                    color: forecast.precipChance > 50
-                        ? WeatherPalette.mistBlue
-                        : WeatherPalette.textTertiary,
-                    fontWeight: FontWeight.w600,
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    '${forecast.precipChance}%',
+                    style: WeatherType.label.copyWith(
+                      fontSize: 11,
+                      color: forecast.precipChance > 50
+                          ? WeatherPalette.mistBlue
+                          : WeatherPalette.textTertiary,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ],

@@ -18,6 +18,7 @@ import '../widgets/weather_impact_meter_card.dart';
 import '../widgets/weather_metric_card_grid.dart';
 import '../widgets/weather_severe_risk_matrix.dart';
 import '../widgets/weather_status_view.dart';
+import '../widgets/weather_weekly_outlook_card.dart';
 
 class WeatherHomeScreen extends StatefulWidget {
   const WeatherHomeScreen({super.key});
@@ -330,7 +331,11 @@ class _TodayDashboardView extends StatelessWidget {
             ),
             const SizedBox(height: WeatherSpacing.space3),
 
-            // 3. Hex-Metric Glass Grid (Precip, Total Rain, Humidity, Wind, Vis, UV)
+            // 3. 7-Day Weekly Forecast Outlook
+            WeatherWeeklyOutlookCard(weather: weather),
+            const SizedBox(height: WeatherSpacing.space3),
+
+            // 4. Hex-Metric Glass Grid (Precip, Total Rain, Humidity, Wind, Vis, UV)
             WeatherMetricCardGrid(weather: displayWeather),
             const SizedBox(height: WeatherSpacing.space3),
 

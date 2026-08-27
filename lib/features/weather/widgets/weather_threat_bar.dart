@@ -64,13 +64,18 @@ class WeatherThreatBar extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: segments.map((_ThreatSegment s) {
-            return Text(
-              s.threat,
-              style: WeatherType.overline.copyWith(
-                color: s.color,
-                fontSize: 10,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 1.1,
+            return Flexible(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  s.threat,
+                  style: WeatherType.overline.copyWith(
+                    color: s.color,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.1,
+                  ),
+                ),
               ),
             );
           }).toList(growable: false),

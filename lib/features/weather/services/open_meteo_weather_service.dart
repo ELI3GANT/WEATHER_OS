@@ -36,7 +36,8 @@ class OpenMeteoWeatherService implements WeatherService {
         'current':
             'temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,surface_pressure,wind_speed_10m,wind_direction_10m',
         'hourly': 'temperature_2m,weather_code,precipitation_probability',
-        'daily': 'temperature_2m_max,temperature_2m_min,uv_index_max,precipitation_sum,sunrise,sunset',
+        'daily':
+            'temperature_2m_max,temperature_2m_min,weather_code,precipitation_probability_max,precipitation_sum,uv_index_max,sunrise,sunset',
         'temperature_unit': 'fahrenheit',
         'wind_speed_unit': 'mph',
         'precipitation_unit': 'inch',
@@ -50,7 +51,7 @@ class OpenMeteoWeatherService implements WeatherService {
           .get(uri, headers: const <String, String>{'Accept': 'application/json'})
           .timeout(timeout);
 
-      if (response.statusCode != HttpStatus.ok) {
+      if (response.statusCode != 200) {
         throw HttpException(
           'Failed to load weather: HTTP ${response.statusCode}',
           uri: uri,

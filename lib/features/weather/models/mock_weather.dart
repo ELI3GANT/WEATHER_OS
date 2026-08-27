@@ -1,3 +1,4 @@
+import 'daily_forecast_item.dart';
 import 'hourly_forecast.dart';
 import 'weather_condition.dart';
 import 'weather_model.dart';
@@ -105,6 +106,71 @@ abstract final class MockWeather {
         condition: WeatherCondition.cloudy,
         precipChance: 20,
         threatLevel: 'low',
+      ),
+    ],
+    dailyForecasts: <DailyForecastItem>[
+      DailyForecastItem(
+        dayLabel: 'Today',
+        condition: WeatherCondition.rain,
+        high: 72,
+        low: 62,
+        precipChance: 90,
+        uvIndex: 1,
+        totalRainInches: 0.80,
+      ),
+      DailyForecastItem(
+        dayLabel: 'Tomorrow',
+        condition: WeatherCondition.storm,
+        high: 74,
+        low: 65,
+        precipChance: 85,
+        uvIndex: 4,
+        totalRainInches: 1.10,
+      ),
+      DailyForecastItem(
+        dayLabel: 'Thu',
+        condition: WeatherCondition.rain,
+        high: 70,
+        low: 61,
+        precipChance: 60,
+        uvIndex: 5,
+        totalRainInches: 0.35,
+      ),
+      DailyForecastItem(
+        dayLabel: 'Fri',
+        condition: WeatherCondition.cloudy,
+        high: 76,
+        low: 59,
+        precipChance: 20,
+        uvIndex: 6,
+        totalRainInches: 0.0,
+      ),
+      DailyForecastItem(
+        dayLabel: 'Sat',
+        condition: WeatherCondition.sunny,
+        high: 79,
+        low: 62,
+        precipChance: 5,
+        uvIndex: 8,
+        totalRainInches: 0.0,
+      ),
+      DailyForecastItem(
+        dayLabel: 'Sun',
+        condition: WeatherCondition.sunny,
+        high: 81,
+        low: 64,
+        precipChance: 0,
+        uvIndex: 8,
+        totalRainInches: 0.0,
+      ),
+      DailyForecastItem(
+        dayLabel: 'Mon',
+        condition: WeatherCondition.cloudy,
+        high: 77,
+        low: 63,
+        precipChance: 15,
+        uvIndex: 6,
+        totalRainInches: 0.0,
       ),
     ],
   );

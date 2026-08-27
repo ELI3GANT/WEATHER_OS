@@ -1,3 +1,4 @@
+import 'daily_forecast_item.dart';
 import 'hourly_forecast.dart';
 import 'weather_condition.dart';
 
@@ -14,6 +15,7 @@ class WeatherModel {
     required this.uvIndex,
     required this.pressureInHg,
     required this.hourly,
+    this.dailyForecasts = const <DailyForecastItem>[],
     this.precipChance = 90,
     this.totalRainInches = 0.80,
     this.visibilityMiles = 8.0,
@@ -61,6 +63,7 @@ class WeatherModel {
   final int uvIndex;
   final double pressureInHg;
   final List<HourlyForecast> hourly;
+  final List<DailyForecastItem> dailyForecasts;
   final int precipChance;
   final double totalRainInches;
   final double visibilityMiles;
@@ -231,6 +234,100 @@ class WeatherModel {
         ? 'HIGH RISK'
         : (cond == WeatherCondition.rain ? 'MODERATE RISK' : 'LOW RISK');
 
+    final dailyTimes =
+        (daily['time'] as List<dynamic>?)?.cast<String>() ?? <String>[];
+    final dailyWeatherCodes =
+        (daily['weather_code'] as List<dynamic>?)?.cast<num>() ?? <num>[];
+
+    final dailyList = <DailyForecastItem>[];
+    const weekdayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+    if (dailyMaxList != null && dailyMaxList.isNotEmpty) {
+      final count = dailyMaxList.length;
+      for (var i = 0; i < count && i < 7; i++) {
+        final dTimeStr = i < dailyTimes.length ? dailyTimes[i] : null;
+        final dDate = dTimeStr != null
+            ? DateTime.tryParse(dTimeStr)
+            : DateTime.now().add(Duration(days: i));
+
+        final dayLabel = i == 0
+            ? 'Today'
+            : (i == 1
+                ? 'Tomorrow'
+                : (dDate != null
+                    ? weekdayNames[dDate.weekday - 1]
+                    : 'Day $i'));
+
+        final dHigh = dailyMaxList[i].toDouble();
+        final dLow = (dailyMinList != null && i < dailyMinList.length)
+            ? dailyMinList[i].toDouble()
+            : dHigh - 12.0;
+        final dCode = (dailyWeatherCodes.isNotEmpty &&
+                i < dailyWeatherCodes.length)
+            ? dailyWeatherCodes[i].toInt()
+            : (i == 0 ? weatherCode : null);
+        final dCondition = WeatherCondition.fromWmoCode(dCode);
+        final dPrecip = (dailyPrecipProbList != null &&
+                i < dailyPrecipProbList.length)
+            ? dailyPrecipProbList[i].round()
+            : (dCondition == WeatherCondition.rain
+                ? 70
+                : (dCondition == WeatherCondition.storm ? 85 : 10));
+        final dUv = (dailyUvList != null && i < dailyUvList.length)
+            ? dailyUvList[i].round()
+            : uvIndex;
+        final dRain = (dailyRainList != null && i < dailyRainList.length)
+            ? dailyRainList[i].toDouble() * 0.03937
+            : 0.0;
+        final dSunrise = (dailySunriseList != null && i < dailySunriseList.length)
+            ? _formatDateTimeString(dailySunriseList[i])
+            : null;
+        final dSunset = (dailySunsetList != null && i < dailySunsetList.length)
+            ? _formatDateTimeString(dailySunsetList[i])
+            : null;
+
+        dailyList.add(
+          DailyForecastItem(
+            dayLabel: dayLabel,
+            date: dDate,
+            condition: dCondition,
+            high: dHigh,
+            low: dLow,
+            precipChance: dPrecip,
+            uvIndex: dUv,
+            totalRainInches: double.parse(dRain.toStringAsFixed(2)),
+            sunrise: dSunrise,
+            sunset: dSunset,
+          ),
+        );
+      }
+    }
+
+    if (dailyList.isEmpty) {
+      final now = DateTime.now();
+      for (var i = 0; i < 7; i++) {
+        final date = now.add(Duration(days: i));
+        final label = i == 0
+            ? 'Today'
+            : (i == 1 ? 'Tomorrow' : weekdayNames[date.weekday - 1]);
+        dailyList.add(
+          DailyForecastItem(
+            dayLabel: label,
+            date: date,
+            condition: i == 0
+                ? cond
+                : (i % 2 == 0
+                    ? WeatherCondition.sunny
+                    : WeatherCondition.cloudy),
+            high: high + (i % 3 == 0 ? 2 : -2),
+            low: low + (i % 2 == 0 ? 1 : -1),
+            precipChance: i == 0 ? precipProb : (i * 10) % 40,
+            uvIndex: uvIndex,
+          ),
+        );
+      }
+    }
+
     return WeatherModel(
       location: location,
       temperature: temp,
@@ -286,6 +383,7 @@ class WeatherModel {
                 isNow: true,
               ),
             ],
+      dailyForecasts: dailyList,
     );
   }
 
@@ -314,6 +412,8 @@ class WeatherModel {
         'whatToExpect': whatToExpect,
         'impactScores': impactScores,
         'hourly': hourly.map((HourlyForecast h) => h.toJson()).toList(),
+        'dailyForecasts':
+            dailyForecasts.map((DailyForecastItem d) => d.toJson()).toList(),
       };
 
   factory WeatherModel.fromJson(Map<String, dynamic> json) => WeatherModel(
@@ -378,7 +478,18 @@ class WeatherModel {
         hourly: ((json['hourly'] as List<dynamic>?) ?? <dynamic>[])
             .map((dynamic e) => HourlyForecast.fromJson(e as Map<String, dynamic>))
             .toList(),
+        dailyForecasts: ((json['dailyForecasts'] as List<dynamic>?) ?? <dynamic>[])
+            .map((dynamic e) =>
+                DailyForecastItem.fromJson(e as Map<String, dynamic>))
+            .toList(),
       );
+
+  static String? _formatDateTimeString(String? isoStr) {
+    if (isoStr == null) return null;
+    final dt = DateTime.tryParse(isoStr);
+    if (dt == null) return null;
+    return _formatTime(dt.hour, dt.minute);
+  }
 
   static String _formatHour(int hour) {
     final h = hour % 12 == 0 ? 12 : hour % 12;
