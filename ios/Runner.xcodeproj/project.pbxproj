@@ -211,12 +211,6 @@
 				LastUpgradeCheck = 2700;
 				ORGANIZATIONNAME = "OnlyTruePerspective LLC";
 				TargetAttributes = {
-					331C8080294A63A400263BE5 = {
-						CreatedOnToolsVersion = 14.0;
-						DevelopmentTeam = 3MVY7ZJ9NN;
-						ProvisioningStyle = Automatic;
-						TestTargetID = 97C146ED1CF9000F007C117D;
-					};
 					97C146ED1CF9000F007C117D = {
 						CreatedOnToolsVersion = 7.3.1;
 						DevelopmentTeam = 3MVY7ZJ9NN;
@@ -242,7 +236,6 @@
 			projectRoot = "";
 			targets = (
 				97C146ED1CF9000F007C117D /* Runner */,
-				331C8080294A63A400263BE5 /* RunnerTests */,
 			);
 		};
 /* End PBXProject section */
