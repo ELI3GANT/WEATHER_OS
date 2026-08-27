@@ -17,6 +17,7 @@ import '../widgets/weather_charts_card.dart';
 import '../widgets/weather_impact_meter_card.dart';
 import '../widgets/weather_metric_card_grid.dart';
 import '../widgets/weather_severe_risk_matrix.dart';
+import '../widgets/weather_settings_modal.dart';
 import '../widgets/weather_status_view.dart';
 import '../widgets/weather_weekly_outlook_card.dart';
 
@@ -187,11 +188,20 @@ class _WeatherHomeScreenState extends State<WeatherHomeScreen> {
                         const Spacer(),
                         IconButton(
                           icon: const Icon(
-                            Icons.menu_rounded,
+                            Icons.tune_rounded,
                             color: WeatherPalette.textPrimary,
                           ),
-                          onPressed: () => WeatherScope.read(context).refresh(),
-                          tooltip: 'Refresh Weather',
+                          onPressed: () {
+                            showModalBottomSheet<void>(
+                              context: context,
+                              backgroundColor: Colors.transparent,
+                              isScrollControlled: true,
+                              builder: (BuildContext ctx) => WeatherSettingsModal(
+                                onRefresh: () => WeatherScope.read(context).refresh(),
+                              ),
+                            );
+                          },
+                          tooltip: 'Station Intelligence & Settings',
                         ),
                       ],
                     ),
