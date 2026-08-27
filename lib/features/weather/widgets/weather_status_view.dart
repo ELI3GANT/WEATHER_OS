@@ -58,7 +58,21 @@ class WeatherErrorView extends StatelessWidget {
             const SizedBox(height: WeatherSpacing.space3),
             Text(message, style: WeatherType.body, textAlign: TextAlign.center),
             const SizedBox(height: WeatherSpacing.space8),
-            FilledButton.tonal(onPressed: onRetry, child: const Text('Retry')),
+            FilledButton.tonal(
+              style: FilledButton.styleFrom(
+                backgroundColor: WeatherPalette.lensLift,
+                foregroundColor: WeatherPalette.textPrimary,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(WeatherRadii.control),
+                  side: BorderSide(
+                    color: WeatherPalette.mistBlue.withValues(alpha: 0.3),
+                  ),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
+              onPressed: onRetry,
+              child: const Text('Retry Telemetry'),
+            ),
           ],
         ),
       ),

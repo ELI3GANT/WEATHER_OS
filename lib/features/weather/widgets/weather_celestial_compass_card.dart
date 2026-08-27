@@ -14,15 +14,35 @@ class WeatherCelestialCompassCard extends StatelessWidget {
 
   final WeatherModel weather;
 
+  double _parseTimeToDecimal(String timeStr, double fallback) {
+    try {
+      final trimmed = timeStr.trim().toUpperCase();
+      final isPm = trimmed.contains('PM');
+      final isAm = trimmed.contains('AM');
+      final clean = trimmed.replaceAll('AM', '').replaceAll('PM', '').trim();
+      final parts = clean.split(':');
+      if (parts.length >= 2) {
+        var hour = int.parse(parts[0]);
+        final minute = int.parse(parts[1]);
+        if (isPm && hour < 12) hour += 12;
+        if (isAm && hour == 12) hour = 0;
+        return hour + (minute / 60.0);
+      }
+    } on Object {
+      // Return safe fallback
+    }
+    return fallback;
+  }
+
   double _calculateSolarProgress() {
     final now = DateTime.now();
-    // Default daytime curve calculation (approx 6 AM to 8 PM)
     final currentHourDec = now.hour + (now.minute / 60.0);
-    const sunriseDec = 5.6; // 5:36 AM
-    const sunsetDec = 20.13; // 8:08 PM
+    final sunriseDec = _parseTimeToDecimal(weather.sunriseTime, 6.0);
+    final sunsetDec = _parseTimeToDecimal(weather.sunsetTime, 20.0);
     if (currentHourDec <= sunriseDec) return 0.05;
     if (currentHourDec >= sunsetDec) return 0.95;
-    return ((currentHourDec - sunriseDec) / (sunsetDec - sunriseDec)).clamp(0.05, 0.95);
+    final span = (sunsetDec - sunriseDec).clamp(1.0, 24.0);
+    return ((currentHourDec - sunriseDec) / span).clamp(0.05, 0.95);
   }
 
   @override

@@ -45,13 +45,14 @@ class _WeatherHomeScreenState extends State<WeatherHomeScreen> {
   }
 
   int? _parseHourFromLabel(String label) {
-    if (label == 'NOW') {
+    final clean = label.trim().toUpperCase();
+    if (clean == 'NOW') {
       return DateTime.now().hour;
     }
-    final parts = label.split(' ');
+    final parts = clean.split(RegExp(r'\s+'));
     if (parts.length >= 2) {
       final hourNum = int.tryParse(parts[0]);
-      final isPm = parts[1].toUpperCase() == 'PM';
+      final isPm = parts[1] == 'PM';
       if (hourNum != null) {
         if (isPm && hourNum < 12) {
           return hourNum + 12;
