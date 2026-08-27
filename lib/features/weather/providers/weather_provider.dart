@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 
 import '../models/weather_model.dart';
 import '../services/location_service.dart';
+import '../services/watch_export_service.dart';
 import '../services/weather_cache_service.dart';
 import '../services/weather_repository.dart';
 
@@ -93,6 +96,8 @@ class WeatherProvider extends ChangeNotifier {
         if (cacheService != null) {
           await cacheService!.saveWeather(fresh);
         }
+        // Export telemetry to Apple Watch & iOS Home/Lock Screen Widgets
+        unawaited(WatchExportService.exportTelemetry(fresh));
       }
     } on Exception {
       if (!_isDisposed) {
