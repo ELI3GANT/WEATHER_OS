@@ -321,7 +321,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "/Users/eli/flutter/packages/flutter_tools/bin/xcode_backend.sh build\n/Users/eli/flutter/packages/flutter_tools/bin/xcode_backend.sh embed_and_thin\n";
+			shellScript = "/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" build\n/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" embed_and_thin\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -442,7 +442,6 @@
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = 3MVY7ZJ9NN;
 				ENABLE_BITCODE = NO;
-				FLUTTER_ROOT = /Users/eli/flutter;
 				INFOPLIST_FILE = Runner/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = WeatherOS;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.weather";
@@ -643,7 +642,6 @@
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = 3MVY7ZJ9NN;
 				ENABLE_BITCODE = NO;
-				FLUTTER_ROOT = /Users/eli/flutter;
 				INFOPLIST_FILE = Runner/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = WeatherOS;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.weather";
@@ -675,7 +673,6 @@
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = 3MVY7ZJ9NN;
 				ENABLE_BITCODE = NO;
-				FLUTTER_ROOT = /Users/eli/flutter;
 				INFOPLIST_FILE = Runner/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = WeatherOS;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.weather";

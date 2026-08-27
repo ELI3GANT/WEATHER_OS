@@ -41,7 +41,11 @@ fi
 echo "=== Target Flutter Project: $TARGET_DIR ==="
 cd "$TARGET_DIR"
 
-# 4. Check and install CocoaPods
+# 4. Fetch packages & configure iOS project environment
+echo "=== Running flutter pub get ==="
+flutter pub get
+
+# 5. Check and install CocoaPods
 echo "=== Checking CocoaPods ==="
 if ! command -v pod &> /dev/null; then
     echo "Installing CocoaPods..."
@@ -52,12 +56,7 @@ if ! command -v pod &> /dev/null; then
     fi
 fi
 
-# 5. Build Flutter iOS Release Artifacts (creates App.framework, Flutter.framework, and dart assets)
-echo "=== Building Flutter iOS Release Artifacts ==="
-flutter pub get
-flutter build ios --release --no-codesign
-
-# 6. Ensure CocoaPods are installed
+# 6. Run CocoaPods install
 echo "=== Running Pod Install ==="
 cd "$TARGET_DIR/ios"
 if command -v pod &> /dev/null; then
@@ -67,6 +66,12 @@ elif [ -x "/opt/homebrew/bin/pod" ]; then
 elif [ -x "/usr/local/bin/pod" ]; then
     /usr/local/bin/pod install
 fi
+
+# 7. Update Generated.xcconfig and flutter_export_environment.sh with cloud paths
+sed -i '' "s|FLUTTER_ROOT=.*|FLUTTER_ROOT=$FLUTTER_ROOT|g" "$TARGET_DIR/ios/Flutter/Generated.xcconfig" || true
+sed -i '' "s|FLUTTER_APPLICATION_PATH=.*|FLUTTER_APPLICATION_PATH=$TARGET_DIR|g" "$TARGET_DIR/ios/Flutter/Generated.xcconfig" || true
+sed -i '' "s|export \"FLUTTER_ROOT=.*\"|export \"FLUTTER_ROOT=$FLUTTER_ROOT\"|g" "$TARGET_DIR/ios/Flutter/flutter_export_environment.sh" || true
+sed -i '' "s|export \"FLUTTER_APPLICATION_PATH=.*\"|export \"FLUTTER_APPLICATION_PATH=$TARGET_DIR\"|g" "$TARGET_DIR/ios/Flutter/flutter_export_environment.sh" || true
 
 echo "=== Xcode Cloud Post-Clone Finished Successfully ==="
 exit 0
