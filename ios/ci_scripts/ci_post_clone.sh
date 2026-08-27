@@ -41,9 +41,12 @@ fi
 echo "=== Target Flutter Project: $TARGET_DIR ==="
 cd "$TARGET_DIR"
 
-# 4. Fetch packages & configure iOS project environment
+# 4. Fetch packages & build Flutter iOS release assets
 echo "=== Running flutter pub get ==="
 flutter pub get
+
+echo "=== Building Flutter iOS Release Assets ==="
+flutter build ios --release --no-codesign
 
 # 5. Check and install CocoaPods
 echo "=== Checking CocoaPods ==="
