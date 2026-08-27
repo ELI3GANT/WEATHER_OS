@@ -170,7 +170,9 @@ class _WeatherWeeklyOutlookCardState extends State<WeatherWeeklyOutlookCard> {
                                     ),
                                   ),
                                   // Range bar
-                                  Positioned(
+                                  AnimatedPositioned(
+                                    duration: const Duration(milliseconds: 400),
+                                    curve: Curves.easeOutCubic,
                                     left: left,
                                     child: Container(
                                       width: width,
@@ -189,7 +191,9 @@ class _WeatherWeeklyOutlookCardState extends State<WeatherWeeklyOutlookCard> {
                                   ),
                                   // Current temperature indicator dot (for Today)
                                   if (currentNorm != null)
-                                    Positioned(
+                                    AnimatedPositioned(
+                                      duration: const Duration(milliseconds: 400),
+                                      curve: Curves.easeOutCubic,
                                       left: (currentNorm * barWidth - 4).clamp(
                                           0.0, barWidth - 8.0),
                                       child: Container(
