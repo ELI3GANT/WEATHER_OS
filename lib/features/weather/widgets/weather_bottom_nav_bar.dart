@@ -10,11 +10,13 @@ class WeatherBottomNavBar extends StatelessWidget {
   const WeatherBottomNavBar({
     required this.currentTab,
     required this.onTabSelected,
+    this.alertCount = 0,
     super.key,
   });
 
   final WeatherNavTab currentTab;
   final ValueChanged<WeatherNavTab> onTabSelected;
+  final int alertCount;
 
   @override
   Widget build(BuildContext context) {
@@ -76,7 +78,7 @@ class WeatherBottomNavBar extends StatelessWidget {
                     child: _NavItem(
                       icon: Icons.notifications_none_rounded,
                       label: 'Alerts',
-                      badgeCount: 2,
+                      badgeCount: alertCount > 0 ? alertCount : null,
                       isSelected: currentTab == WeatherNavTab.alerts,
                       onTap: () => onTabSelected(WeatherNavTab.alerts),
                     ),

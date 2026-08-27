@@ -173,6 +173,14 @@ class _WeatherHomeScreenState extends State<WeatherHomeScreen> {
                   WeatherBottomNavBar(
                     currentTab: _currentTab,
                     onTabSelected: _onTabSelected,
+                    alertCount: (weather != null && weather.riskLevel == 'HIGH RISK')
+                        ? 2
+                        : ((weather != null &&
+                                (weather.riskLevel == 'MODERATE RISK' ||
+                                    weather.condition == WeatherCondition.storm ||
+                                    weather.condition == WeatherCondition.rain))
+                            ? 1
+                            : 0),
                   ),
               ],
             ),
@@ -241,8 +249,9 @@ class _WeatherTabBody extends StatelessWidget {
             WeatherNavTab.radar => const RadarView(
                 key: ValueKey('tab_radar'),
               ),
-            WeatherNavTab.alerts => const WeatherAlertsView(
-                key: ValueKey('tab_alerts'),
+            WeatherNavTab.alerts => WeatherAlertsView(
+                key: const ValueKey('tab_alerts'),
+                weather: provider.weather,
               ),
           },
         ),

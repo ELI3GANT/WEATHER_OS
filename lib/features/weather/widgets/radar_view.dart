@@ -19,6 +19,11 @@ class _RadarViewState extends State<RadarView>
     duration: const Duration(seconds: 4),
   )..repeat();
 
+  int _selectedRangeIndex = 1; // 0: 50mi, 1: 100mi, 2: 250mi
+  bool _isPlaying = true;
+
+  static const List<String> _ranges = <String>['50 mi', '100 mi', '250 mi'];
+
   @override
   void initState() {
     super.initState();
@@ -31,7 +36,7 @@ class _RadarViewState extends State<RadarView>
         state == AppLifecycleState.inactive ||
         state == AppLifecycleState.detached) {
       _sweepController.stop();
-    } else if (state == AppLifecycleState.resumed) {
+    } else if (state == AppLifecycleState.resumed && _isPlaying) {
       if (!_sweepController.isAnimating) {
         _sweepController.repeat();
       }
@@ -43,6 +48,17 @@ class _RadarViewState extends State<RadarView>
     WidgetsBinding.instance.removeObserver(this);
     _sweepController.dispose();
     super.dispose();
+  }
+
+  void _togglePlay() {
+    setState(() {
+      _isPlaying = !_isPlaying;
+      if (_isPlaying) {
+        _sweepController.repeat();
+      } else {
+        _sweepController.stop();
+      }
+    });
   }
 
   @override
@@ -62,6 +78,10 @@ class _RadarViewState extends State<RadarView>
                 decoration: BoxDecoration(
                   color: const Color(0xFF69F0AE).withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(WeatherRadii.pill),
+                  border: Border.all(
+                    color: const Color(0xFF69F0AE).withValues(alpha: 0.4),
+                    width: 1,
+                  ),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -89,32 +109,111 @@ class _RadarViewState extends State<RadarView>
             ],
           ),
           const SizedBox(height: WeatherSpacing.space3),
+
+          // Radar Canvas
           GlassLens(
             padding: const EdgeInsets.all(WeatherSpacing.space4),
-            child: AspectRatio(
-              aspectRatio: 1.1,
-              child: AnimatedBuilder(
-                animation: _sweepController,
-                builder: (BuildContext context, Widget? child) {
-                  return CustomPaint(
-                    painter: _RadarCanvasPainter(
-                      sweepAngle: _sweepController.value * math.pi * 2,
+            child: Column(
+              children: <Widget>[
+                AspectRatio(
+                  aspectRatio: 1.1,
+                  child: AnimatedBuilder(
+                    animation: _sweepController,
+                    builder: (BuildContext context, Widget? child) {
+                      return CustomPaint(
+                        painter: _RadarCanvasPainter(
+                          sweepAngle: _sweepController.value * math.pi * 2,
+                          zoomLevel: _selectedRangeIndex == 0
+                              ? 1.3
+                              : (_selectedRangeIndex == 1 ? 1.0 : 0.75),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: WeatherSpacing.space3),
+
+                // Interactive Controls (Range Chips + Play/Pause)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: <Widget>[
+                    // Range chips
+                    Row(
+                      children: List<Widget>.generate(_ranges.length, (int index) {
+                        final isSelected = _selectedRangeIndex == index;
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 6),
+                          child: InkWell(
+                            onTap: () {
+                              setState(() {
+                                _selectedRangeIndex = index;
+                              });
+                            },
+                            borderRadius: BorderRadius.circular(WeatherRadii.pill),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 180),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: isSelected
+                                    ? WeatherPalette.mistBlue.withValues(alpha: 0.22)
+                                    : WeatherPalette.lensLift.withValues(alpha: 0.3),
+                                borderRadius:
+                                    BorderRadius.circular(WeatherRadii.pill),
+                                border: Border.all(
+                                  color: isSelected
+                                      ? WeatherPalette.mistBlue
+                                      : WeatherPalette.lensRim.withValues(alpha: 0.15),
+                                ),
+                              ),
+                              child: Text(
+                                _ranges[index],
+                                style: WeatherType.label.copyWith(
+                                  fontSize: 11,
+                                  fontWeight:
+                                      isSelected ? FontWeight.w700 : FontWeight.w500,
+                                  color: isSelected
+                                      ? WeatherPalette.mistBlue
+                                      : WeatherPalette.textSecondary,
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      }),
                     ),
-                  );
-                },
-              ),
+
+                    // Play/Pause button
+                    IconButton(
+                      icon: Icon(
+                        _isPlaying
+                            ? Icons.pause_circle_filled_rounded
+                            : Icons.play_circle_fill_rounded,
+                        color: WeatherPalette.mistBlue,
+                        size: 26,
+                      ),
+                      onPressed: _togglePlay,
+                      tooltip: _isPlaying ? 'Pause Radar Sweep' : 'Resume Radar Sweep',
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
           const SizedBox(height: WeatherSpacing.space3),
+
+          // Intensity Legend
           GlassLens(
             padding: const EdgeInsets.all(WeatherSpacing.space4),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: <Widget>[
-                _RadarLegendItem(color: const Color(0xFF69F0AE), label: 'Light'),
-                _RadarLegendItem(color: const Color(0xFFFFB300), label: 'Moderate'),
-                _RadarLegendItem(color: const Color(0xFFFF5252), label: 'Heavy'),
-                _RadarLegendItem(color: const Color(0xFFE040FB), label: 'Extreme / Hail'),
+              children: const <Widget>[
+                _RadarLegendItem(color: Color(0xFF69F0AE), label: 'Light'),
+                _RadarLegendItem(color: Color(0xFFFFB300), label: 'Moderate'),
+                _RadarLegendItem(color: Color(0xFFFF5252), label: 'Heavy'),
+                _RadarLegendItem(color: Color(0xFFE040FB), label: 'Extreme / Hail'),
               ],
             ),
           ),
@@ -148,9 +247,13 @@ class _RadarLegendItem extends StatelessWidget {
 }
 
 class _RadarCanvasPainter extends CustomPainter {
-  const _RadarCanvasPainter({required this.sweepAngle});
+  const _RadarCanvasPainter({
+    required this.sweepAngle,
+    this.zoomLevel = 1.0,
+  });
 
   final double sweepAngle;
+  final double zoomLevel;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -179,7 +282,9 @@ class _RadarCanvasPainter extends CustomPainter {
       ringPaint,
     );
 
-    // Synthetic Rain Cell Blobs
+    // Synthetic Rain Cell Blobs scaled by zoom
+    final blob1Offset = Offset(30 * zoomLevel, -40 * zoomLevel);
+    final blob1Radius = 55 * zoomLevel;
     final cellPaint = Paint()
       ..shader = RadialGradient(
         colors: <Color>[
@@ -191,12 +296,14 @@ class _RadarCanvasPainter extends CustomPainter {
         stops: const <double>[0.0, 0.35, 0.7, 1.0],
       ).createShader(
         Rect.fromCircle(
-          center: center + const Offset(30, -40),
-          radius: 55,
+          center: center + blob1Offset,
+          radius: blob1Radius,
         ),
       );
-    canvas.drawCircle(center + const Offset(30, -40), 55, cellPaint);
+    canvas.drawCircle(center + blob1Offset, blob1Radius, cellPaint);
 
+    final blob2Offset = Offset(-45 * zoomLevel, 25 * zoomLevel);
+    final blob2Radius = 40 * zoomLevel;
     final cellPaint2 = Paint()
       ..shader = RadialGradient(
         colors: <Color>[
@@ -207,11 +314,11 @@ class _RadarCanvasPainter extends CustomPainter {
         stops: const <double>[0.0, 0.45, 1.0],
       ).createShader(
         Rect.fromCircle(
-          center: center + const Offset(-45, 25),
-          radius: 40,
+          center: center + blob2Offset,
+          radius: blob2Radius,
         ),
       );
-    canvas.drawCircle(center + const Offset(-45, 25), 40, cellPaint2);
+    canvas.drawCircle(center + blob2Offset, blob2Radius, cellPaint2);
 
     // Rotating Radar Sweep Line with Gradient Trail
     final sweepPaint = Paint()
@@ -245,5 +352,5 @@ class _RadarCanvasPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _RadarCanvasPainter oldDelegate) =>
-      oldDelegate.sweepAngle != sweepAngle;
+      oldDelegate.sweepAngle != sweepAngle || oldDelegate.zoomLevel != zoomLevel;
 }
