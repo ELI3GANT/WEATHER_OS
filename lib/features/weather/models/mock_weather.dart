@@ -1,0 +1,113 @@
+import 'hourly_forecast.dart';
+import 'weather_condition.dart';
+import 'weather_model.dart';
+
+abstract final class MockWeather {
+  static const WeatherModel newYorkRain = WeatherModel(
+    location: 'Woonsocket, RI',
+    temperature: 71,
+    condition: WeatherCondition.rain,
+    feelsLike: 69,
+    high: 72,
+    low: 62,
+    humidity: 93,
+    windSpeedMph: 12,
+    uvIndex: 1,
+    pressureInHg: 29.92,
+    precipChance: 90,
+    totalRainInches: 0.80,
+    visibilityMiles: 8.0,
+    windDirectionCompass: 'ESE',
+    windBearingDegrees: 112.0,
+    sunriseTime: '5:36 AM',
+    sunsetTime: '8:08 PM',
+    daylightDuration: '14h 32m',
+    dailySummary:
+        'Rainy with a high chance of showers and thunderstorms.',
+    riskLevel: 'LOW RISK',
+    severeRisks: <String, double>{
+      'rain': 0.85,
+      'thunderstorms': 0.55,
+      'flooding': 0.50,
+      'wind': 0.25,
+      'hail': 0.20,
+      'tornado': 0.05,
+    },
+    whatToExpect: <String>[
+      'Bring an umbrella',
+      'Slick roads possible',
+      'Thunderstorms this afternoon',
+      'Heavy rain around midday',
+      'Plan for delays',
+    ],
+    impactScores: <String, int>{
+      'Driving': 80,
+      'Outdoor Plans': 30,
+      'Construction': 35,
+      'Running': 20,
+      'Flying Drones': 15,
+      'Photography': 25,
+    },
+    hourly: <HourlyForecast>[
+      HourlyForecast(
+        timeLabel: '6 AM',
+        temperature: 64,
+        condition: WeatherCondition.cloudy,
+        precipChance: 20,
+        threatLevel: 'low',
+      ),
+      HourlyForecast(
+        timeLabel: '8 AM',
+        temperature: 66,
+        condition: WeatherCondition.rain,
+        precipChance: 40,
+        threatLevel: 'moderate',
+      ),
+      HourlyForecast(
+        timeLabel: '10 AM',
+        temperature: 68,
+        condition: WeatherCondition.rain,
+        precipChance: 70,
+        threatLevel: 'moderate',
+      ),
+      HourlyForecast(
+        timeLabel: '12 PM',
+        temperature: 71,
+        condition: WeatherCondition.rain,
+        precipChance: 90,
+        threatLevel: 'high',
+        isNow: true,
+      ),
+      HourlyForecast(
+        timeLabel: '2 PM',
+        temperature: 72,
+        condition: WeatherCondition.storm,
+        precipChance: 90,
+        threatLevel: 'high',
+      ),
+      HourlyForecast(
+        timeLabel: '5 PM',
+        temperature: 70,
+        condition: WeatherCondition.rain,
+        precipChance: 60,
+        threatLevel: 'moderate',
+      ),
+      HourlyForecast(
+        timeLabel: '8 PM',
+        temperature: 66,
+        condition: WeatherCondition.cloudy,
+        precipChance: 30,
+        threatLevel: 'moderate',
+      ),
+      HourlyForecast(
+        timeLabel: '11 PM',
+        temperature: 64,
+        condition: WeatherCondition.cloudy,
+        precipChance: 20,
+        threatLevel: 'low',
+      ),
+    ],
+  );
+
+  static const WeatherModel newYorkStorm = newYorkRain;
+}

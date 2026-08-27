@@ -1,0 +1,35 @@
+WeatherOS Safari accessibility transcript
+Captured: 2026-08-20
+Surface: http://127.0.0.1:4173/
+Runtime: Flutter web in Safari
+Loading QA build flag: WEATHEROS_MOCK_LATENCY_MS=5000
+Loading frame: weatheros-safari-loading.jpeg
+Loaded frame: weatheros-safari-loaded.jpeg
+Accessibility frame: weatheros-safari-accessibility-current.jpeg
+
+Safari accessibility order
+
+1. Current conditions
+   New York. 71 degrees. Rain. Feels like 69 degrees. High 74, low 62.
+2. Hourly forecast
+   NOW, 71 degrees, Rain, current hour
+   12 PM, 72 degrees, Rain
+   3 PM, 74 degrees, Cloudy
+   6 PM, 73 degrees, Cloudy
+   9 PM, 68 degrees, Cloudy
+   12 AM, 64 degrees, Rain
+3. Weather metrics
+   HUMIDITY, 63 percent
+   WIND, 12 miles per hour
+   UV, index 5
+   PRESSURE, 30.12 inches of mercury
+
+Raw Safari AX text
+
+New York. 71 degrees. Rain. Feels like 69 degrees. High 74, low 62. NOW, 71 degrees, Rain, current hour 12 PM, 72 degrees, Rain 3 PM, 74 degrees, Cloudy 6 PM, 73 degrees, Cloudy 9 PM, 68 degrees, Cloudy 12 AM, 64 degrees, Rain HUMIDITY, 63 percent WIND, 12 miles per hour UV, index 5 PRESSURE, 30.12 inches of mercury
+
+Safari AX node
+
+HTML content Description: WeatherOS
+  container
+    text New York. 71 degrees. Rain. Feels like 69 degrees. High 74, low 62. NOW, 71 degrees, Rain, current hour 12 PM, 72 degrees, Rain 3 PM, 74 degrees, Cloudy 6 PM, 73 degrees, Cloudy 9 PM, 68 degrees, Cloudy 12 AM, 64 degrees, Rain HUMIDITY, 63 percent WIND, 12 miles per hour UV, index 5 PRESSURE, 30.12 inches of mercury

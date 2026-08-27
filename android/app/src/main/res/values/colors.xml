@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="canvasDeep">#060B12</color>
+    <color name="widgetCardBackground">#141C28</color>
+    <color name="widgetBorder">#2E3E56</color>
+    <color name="widgetTextPrimary">#F0F4F8</color>
+    <color name="widgetTextSecondary">#8CA0BA</color>
+    <color name="widgetAccent">#38BDF8</color>
+</resources>
