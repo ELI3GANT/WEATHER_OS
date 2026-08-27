@@ -9,7 +9,6 @@ export PATH="/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/
 
 echo "=== System Architecture: $(uname -m) ==="
 echo "=== Current Working Directory: $(pwd) ==="
-echo "=== Environment PATH: $PATH ==="
 
 # 1. Install Flutter (stable)
 if [ ! -d "$HOME/flutter" ]; then
@@ -42,25 +41,7 @@ fi
 echo "=== Target Flutter Project: $TARGET_DIR ==="
 cd "$TARGET_DIR"
 
-# 4. Fetch packages & configure iOS project environment
-echo "=== Running flutter pub get ==="
-flutter pub get
-
-echo "=== Generating iOS Flutter Configuration for Cloud Environment ==="
-flutter build ios --config-only --release --no-codesign || true
-
-# Dynamic fallback path rewrites for Xcode Build Phases
-if [ -f "ios/Flutter/Generated.xcconfig" ]; then
-    sed -i '' "s|FLUTTER_ROOT=.*|FLUTTER_ROOT=$FLUTTER_ROOT|g" ios/Flutter/Generated.xcconfig || true
-    sed -i '' "s|FLUTTER_APPLICATION_PATH=.*|FLUTTER_APPLICATION_PATH=$TARGET_DIR|g" ios/Flutter/Generated.xcconfig || true
-fi
-
-if [ -f "ios/Flutter/flutter_export_environment.sh" ]; then
-    sed -i '' "s|export \"FLUTTER_ROOT=.*\"|export \"FLUTTER_ROOT=$FLUTTER_ROOT\"|g" ios/Flutter/flutter_export_environment.sh || true
-    sed -i '' "s|export \"FLUTTER_APPLICATION_PATH=.*\"|export \"FLUTTER_APPLICATION_PATH=$TARGET_DIR\"|g" ios/Flutter/flutter_export_environment.sh || true
-fi
-
-# 5. Check and install CocoaPods
+# 4. Check and install CocoaPods
 echo "=== Checking CocoaPods ==="
 if ! command -v pod &> /dev/null; then
     echo "Installing CocoaPods..."
@@ -71,7 +52,12 @@ if ! command -v pod &> /dev/null; then
     fi
 fi
 
-# 6. Run CocoaPods install
+# 5. Build Flutter iOS Release Artifacts (creates App.framework, Flutter.framework, and dart assets)
+echo "=== Building Flutter iOS Release Artifacts ==="
+flutter pub get
+flutter build ios --release --no-codesign
+
+# 6. Ensure CocoaPods are installed
 echo "=== Running Pod Install ==="
 cd "$TARGET_DIR/ios"
 if command -v pod &> /dev/null; then
