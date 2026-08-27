@@ -133,12 +133,54 @@ class _WeatherHomeScreenState extends State<WeatherHomeScreen> {
                                 color: WeatherPalette.textPrimary,
                               ),
                             ),
-                            Text(
-                              _formatTodayHeaderDate(),
-                              style: WeatherType.label.copyWith(
-                                fontSize: 11,
-                                color: WeatherPalette.textSecondary,
-                              ),
+                            Row(
+                              children: <Widget>[
+                                Text(
+                                  _formatTodayHeaderDate(),
+                                  style: WeatherType.label.copyWith(
+                                    fontSize: 11,
+                                    color: WeatherPalette.textSecondary,
+                                  ),
+                                ),
+                                if (provider.isOffline) ...<Widget>[
+                                  const SizedBox(width: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 5,
+                                      vertical: 1,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: WeatherPalette.horizonAmber
+                                          .withValues(alpha: 0.15),
+                                      borderRadius:
+                                          BorderRadius.circular(WeatherRadii.pill),
+                                      border: Border.all(
+                                        color: WeatherPalette.horizonAmber
+                                            .withValues(alpha: 0.35),
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: <Widget>[
+                                        const Icon(
+                                          Icons.cloud_off_rounded,
+                                          size: 10,
+                                          color: WeatherPalette.horizonAmber,
+                                        ),
+                                        const SizedBox(width: 3),
+                                        Text(
+                                          'CACHED',
+                                          style: WeatherType.label.copyWith(
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.w700,
+                                            color: WeatherPalette.horizonAmber,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ],
                             ),
                           ],
                         ),

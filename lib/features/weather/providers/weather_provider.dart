@@ -21,6 +21,7 @@ class WeatherProvider extends ChangeNotifier {
   WeatherLoadState _state = WeatherLoadState.initial;
   WeatherModel? _weather;
   String? _errorMessage;
+  bool _isOffline = false;
   bool _isDisposed = false;
 
   double _latitude = 40.7128;
@@ -30,6 +31,7 @@ class WeatherProvider extends ChangeNotifier {
   WeatherLoadState get state => _state;
   WeatherModel? get weather => _weather;
   String? get errorMessage => _errorMessage;
+  bool get isOffline => _isOffline;
 
   @override
   void dispose() {
@@ -55,6 +57,7 @@ class WeatherProvider extends ChangeNotifier {
       if (cached != null && !_isDisposed) {
         _weather = cached;
         _state = WeatherLoadState.loaded;
+        _isOffline = true;
         notifyListeners();
       }
     }
@@ -85,6 +88,7 @@ class WeatherProvider extends ChangeNotifier {
       if (!_isDisposed) {
         _weather = fresh;
         _state = WeatherLoadState.loaded;
+        _isOffline = false;
         _errorMessage = null;
         if (cacheService != null) {
           await cacheService!.saveWeather(fresh);
@@ -95,6 +99,8 @@ class WeatherProvider extends ChangeNotifier {
         if (_weather == null) {
           _errorMessage = 'Weather data is temporarily unavailable.';
           _state = WeatherLoadState.error;
+        } else {
+          _isOffline = true;
         }
       }
     }

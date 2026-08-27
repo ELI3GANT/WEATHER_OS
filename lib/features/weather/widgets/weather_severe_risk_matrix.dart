@@ -69,10 +69,20 @@ class WeatherSevereRiskMatrix extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF69F0AE).withValues(alpha: 0.15),
+                  color: (weather.riskLevel.toUpperCase() == 'HIGH RISK'
+                          ? const Color(0xFFFF5252)
+                          : (weather.riskLevel.toUpperCase() == 'MODERATE RISK'
+                              ? const Color(0xFFFFB300)
+                              : const Color(0xFF69F0AE)))
+                      .withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(WeatherRadii.pill),
                   border: Border.all(
-                    color: const Color(0xFF69F0AE).withValues(alpha: 0.4),
+                    color: (weather.riskLevel.toUpperCase() == 'HIGH RISK'
+                            ? const Color(0xFFFF5252)
+                            : (weather.riskLevel.toUpperCase() == 'MODERATE RISK'
+                                ? const Color(0xFFFFB300)
+                                : const Color(0xFF69F0AE)))
+                        .withValues(alpha: 0.4),
                     width: 1,
                   ),
                 ),
@@ -81,7 +91,11 @@ class WeatherSevereRiskMatrix extends StatelessWidget {
                   style: WeatherType.label.copyWith(
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
-                    color: const Color(0xFF69F0AE),
+                    color: (weather.riskLevel.toUpperCase() == 'HIGH RISK'
+                        ? const Color(0xFFFF5252)
+                        : (weather.riskLevel.toUpperCase() == 'MODERATE RISK'
+                            ? const Color(0xFFFFB300)
+                            : const Color(0xFF69F0AE))),
                   ),
                 ),
               ),
