@@ -54,13 +54,19 @@ void drawAtmosphericClouds(
   Size size, {
   required double progress,
   required double density,
+  double windBearing = 180.0,
+  double windIntensity = 0.0,
 }) {
   _drawStormCore(canvas, size, density);
+
+  // Calculate wind drift based on bearing and intensity
+  final windRadians = (windBearing - 180.0) * math.pi / 180.0;
+  final windDriftFactor = math.cos(windRadians) * windIntensity * 0.15;
 
   for (var index = 0; index < _clusters.length; index++) {
     final cluster = _clusters[index];
     final direction = index.isEven ? 1.0 : -1.0;
-    final drift = (progress - 0.5) * size.width * 0.035 * direction;
+    final drift = (progress - 0.5) * size.width * 0.035 * direction + windDriftFactor * size.width * 0.08;
     final bounds = Rect.fromCenter(
       center: Offset(size.width * cluster.x + drift, size.height * cluster.y),
       width: size.shortestSide * cluster.width,
@@ -114,11 +120,14 @@ void drawAtmosphericClouds(
     );
   }
 
-  _drawBillows(canvas, size, density, progress);
+  _drawBillows(canvas, size, density, progress, windBearing, windIntensity);
   _drawLowerStrata(canvas, size, density);
 }
 
-void _drawBillows(Canvas canvas, Size size, double density, double progress) {
+void _drawBillows(Canvas canvas, Size size, double density, double progress, double windBearing, double windIntensity) {
+  final windRadians = (windBearing - 180.0) * math.pi / 180.0;
+  final windDriftFactor = math.cos(windRadians) * windIntensity * 0.1;
+
   for (var index = 0; index < _cachedUnitBillowPaths.length; index++) {
     final yUnit = _unit(index * 17 + 5);
     final xUnit = _unit(index * 29 + 11);
@@ -126,7 +135,7 @@ void _drawBillows(Canvas canvas, Size size, double density, double progress) {
     final driftDirection = index.isEven ? 1.0 : -1.0;
     final center = Offset(
       size.width * (0.52 + xUnit * 0.54) +
-          (progress - 0.5) * size.width * 0.025 * driftDirection,
+          (progress - 0.5) * size.width * 0.025 * driftDirection + windDriftFactor * size.width * 0.06,
       size.height * (0.08 + yUnit * 0.86),
     );
     final radius = size.shortestSide * (0.045 + radiusUnit * 0.085);

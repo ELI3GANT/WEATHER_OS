@@ -243,7 +243,7 @@ class WeatherSettingsModal extends StatelessWidget {
               // Version info footer
               Center(
                 child: Text(
-                  'WeatherOS v1.0.3 • Build 17 • OnlyTruePerspective LLC',
+                  'WeatherOS v1.0.4 • Build 18 • OnlyTruePerspective LLC',
                   style: WeatherType.label.copyWith(
                     fontSize: 10,
                     color: WeatherPalette.textTertiary,

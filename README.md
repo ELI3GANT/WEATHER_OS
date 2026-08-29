@@ -29,12 +29,27 @@ flutter test
 flutter build appbundle --release
 ```
 
+## Store & Platform Availability
+
+### DOWNLOAD NOW
+* **Google Play Store (Android):** **AVAILABLE NOW**
+  Package ID: `app.weatheros.app`
+  [Get it on Google Play](https://play.google.com/store/apps/details?id=app.weatheros.app)
+
+### COMING SOON
+* **Apple App Store (iOS & watchOS):** **IN APP STORE REVIEW / COMING SOON**
+  *Native SwiftUI Liquid Glass chrome, Apple Watch companion app, and WidgetKit complications.*
+
+### TRY ONLINE
+* **Web:** [WeatherOS Online Preview](https://www.onlytrueperspective.tech/weatheros)
+
 ## Release Preparation & Production Ownership
 
 - **Organization:** OnlyTruePerspective LLC
 - **Bundle / Application ID:** `app.weatheros.app`
 - **Official Privacy Policy:** `https://www.onlytrueperspective.tech/weatheros/privacy`
 - **Release Signing:** Keystore configuration managed via `android/key.properties` (see `android/key.properties.example`).
-- **Android Target:** Android App Bundle (`.aab`) ready for Google Play Console Internal Testing.
+- **Android Target:** Android App Bundle (`.aab`) production release for Google Play.
+- **iOS Target:** Archive & IPA build via `scripts/build_appstore_ipa.sh`.
 
 

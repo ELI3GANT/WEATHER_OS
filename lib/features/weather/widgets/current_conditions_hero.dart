@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../app/theme/weather_tokens.dart';
 import '../../../core/platform_ui/weather_platform_card.dart';
 import '../../../core/utils/weather_formatters.dart';
+import '../models/weather_atmosphere_state.dart';
 import '../models/weather_model.dart';
 import 'weather_glyph.dart';
 
@@ -53,6 +54,7 @@ class CurrentConditionsHero extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final riskColor = _riskBadgeColor(weather.riskLevel);
+    final atmosphereState = WeatherAtmosphereState.fromWeather(weather);
 
     return Semantics(
       container: true,
@@ -144,7 +146,7 @@ class CurrentConditionsHero extends StatelessWidget {
                         Text('DAY SUMMARY', style: WeatherType.overline.copyWith(fontSize: 9)),
                         const SizedBox(height: 4),
                         Text(
-                          weather.dailySummary,
+                          atmosphereState.storyLine,
                           style: WeatherType.body.copyWith(
                             fontSize: 12,
                             color: WeatherPalette.textPrimary,
@@ -263,38 +265,63 @@ class CurrentConditionsHero extends StatelessWidget {
                               Text('DAY SUMMARY', style: WeatherType.overline),
                               const SizedBox(height: 4),
                               Text(
-                                weather.dailySummary,
+                                atmosphereState.storyLine,
                                 style: WeatherType.body.copyWith(
                                   fontSize: 13,
                                   color: WeatherPalette.textPrimary,
                                 ),
                               ),
                               const SizedBox(height: WeatherSpacing.space2),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                decoration: BoxDecoration(
-                                  color: riskColor.withValues(alpha: 0.15),
-                                  borderRadius: BorderRadius.circular(WeatherRadii.pill),
-                                  border: Border.all(
-                                    color: riskColor.withValues(alpha: 0.45),
-                                    width: 1,
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: <Widget>[
-                                    Icon(Icons.shield_outlined, size: 13, color: riskColor),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      weather.riskLevel,
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w800,
-                                        color: riskColor,
+                              Wrap(
+                                alignment: WrapAlignment.spaceBetween,
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                spacing: WeatherSpacing.space2,
+                                runSpacing: WeatherSpacing.space1,
+                                children: <Widget>[
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 3,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: riskColor.withValues(alpha: 0.15),
+                                      borderRadius: BorderRadius.circular(
+                                        WeatherRadii.pill,
+                                      ),
+                                      border: Border.all(
+                                        color: riskColor.withValues(alpha: 0.45),
+                                        width: 1,
                                       ),
                                     ),
-                                  ],
-                                ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: <Widget>[
+                                        Icon(
+                                          Icons.shield_outlined,
+                                          size: 13,
+                                          color: riskColor,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          weather.riskLevel,
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w800,
+                                            color: riskColor,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Text(
+                                    'H ${WeatherFormatters.degrees(weather.high)}  L ${WeatherFormatters.degrees(weather.low)}',
+                                    style: WeatherType.label.copyWith(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: WeatherPalette.textSecondary,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),

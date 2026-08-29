@@ -9,6 +9,8 @@ import '../../../core/platform_ui/weather_platform.dart';
 import '../../../core/platform_ui/weather_platform_header.dart';
 import '../../../core/platform_ui/weather_platform_navigation_bar.dart';
 import '../../../core/platform_ui/weather_platform_sheet.dart';
+import '../models/mock_weather.dart';
+import '../models/weather_atmosphere_state.dart';
 import '../models/weather_condition.dart';
 import '../models/weather_model.dart';
 import '../providers/weather_provider.dart';
@@ -180,6 +182,11 @@ class _WeatherHomeScreenState extends State<WeatherHomeScreen> {
     }
 
     final alertCount = _getAlertCount(weather);
+    final sceneWeather = weather ?? MockWeather.newYorkRain;
+    final atmosphereState = WeatherAtmosphereState.fromWeather(
+      sceneWeather,
+      now: widget.currentTime ?? DateTime.now(),
+    );
 
     return Scaffold(
       body: Stack(
@@ -190,6 +197,7 @@ class _WeatherHomeScreenState extends State<WeatherHomeScreen> {
               condition: activeCondition,
               customHour: activeHour,
               animationProgress: widget.atmosphereProgress,
+              atmosphereState: atmosphereState,
             ),
           ),
           SafeArea(
