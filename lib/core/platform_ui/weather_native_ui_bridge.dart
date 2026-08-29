@@ -56,11 +56,15 @@ class WeatherNativeUIBridge {
     }
 
     try {
-      final result = await _channel.invokeMethod<bool>('ping');
+      final result = await _channel
+          .invokeMethod<bool>('ping')
+          .timeout(const Duration(seconds: 3), onTimeout: () => false);
       _isNativeBridgeAvailable = result ?? false;
     } on MissingPluginException {
       _isNativeBridgeAvailable = false;
     } on PlatformException {
+      _isNativeBridgeAvailable = false;
+    } on Exception {
       _isNativeBridgeAvailable = false;
     }
   }

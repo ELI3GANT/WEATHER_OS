@@ -24,7 +24,7 @@ class _RadarViewState extends State<RadarView>
   late final AnimationController _sweepController = AnimationController(
     vsync: this,
     duration: const Duration(seconds: 4),
-  )..repeat();
+  );
 
   int _selectedRangeIndex = 1; // 0: 50mi, 1: 100mi, 2: 250mi
   bool _isPlaying = true;
@@ -49,6 +49,19 @@ class _RadarViewState extends State<RadarView>
       _togglePlay();
     });
     _syncBridgeState();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final reduceMotion =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    if (!reduceMotion && _isPlaying && !_sweepController.isAnimating) {
+      _sweepController.repeat();
+    } else if (reduceMotion) {
+      _sweepController.stop();
+      _sweepController.value = 0.0;
+    }
   }
 
   void _syncBridgeState() {

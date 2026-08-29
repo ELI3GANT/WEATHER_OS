@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:weather_os/app/theme/weather_theme.dart';
 import 'package:weather_os/features/weather/models/mock_weather.dart';
+import 'package:weather_os/features/weather/models/weather_condition.dart';
 import 'package:weather_os/features/weather/screens/weather_showcase_screen.dart';
 import 'package:weather_os/features/weather/widgets/current_conditions_hero.dart';
 import 'package:weather_os/features/weather/widgets/hourly_forecast_rail.dart';
 import 'package:weather_os/features/weather/widgets/weather_metrics_strip.dart';
+import 'package:weather_os/features/weather/widgets/weather_glyph.dart';
 
 void main() {
   testWidgets('atmosphere fills the expanded viewport', (
@@ -29,7 +31,9 @@ void main() {
       findsOneWidget,
     );
     expect(
-      find.bySemanticsLabel(RegExp(r'12 PM, 71 degrees, Rain, 90 percent chance of rain')),
+      find.bySemanticsLabel(
+        RegExp(r'12 PM, 71 degrees, Rain, 90 percent chance of rain'),
+      ),
       findsOneWidget,
     );
 
@@ -64,6 +68,35 @@ void main() {
     expect((uv.dy - pressure.dy).abs(), lessThan(1));
     expect(uv.dy, greaterThan(humidity.dy));
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('weather glyph stops its ticker when animation is disabled', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      const MediaQuery(
+        data: MediaQueryData(),
+        child: Directionality(
+          textDirection: TextDirection.ltr,
+          child: WeatherGlyph(condition: WeatherCondition.rain),
+        ),
+      ),
+    );
+    await tester.pump();
+    expect(tester.binding.transientCallbackCount, greaterThan(0));
+
+    await tester.pumpWidget(
+      const MediaQuery(
+        data: MediaQueryData(),
+        child: Directionality(
+          textDirection: TextDirection.ltr,
+          child: WeatherGlyph(condition: WeatherCondition.rain, animate: false),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(tester.binding.transientCallbackCount, 0);
   });
 }
 

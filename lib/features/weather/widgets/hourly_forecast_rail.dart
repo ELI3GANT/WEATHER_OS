@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../../../app/theme/weather_tokens.dart';
@@ -22,34 +24,52 @@ class HourlyForecastRail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final useStackedHeader = MediaQuery.textScalerOf(context).scale(1) > 1.3;
+
     return WeatherPlatformCard(
       padding: const EdgeInsets.all(WeatherSpacing.space4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: <Widget>[
-              Flexible(
-                child: Text(
-                  'HOURLY FORECAST',
-                  style: WeatherType.overline,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              Flexible(
-                child: Text(
+          if (useStackedHeader)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text('HOURLY FORECAST', style: WeatherType.overline),
+                const SizedBox(height: WeatherSpacing.space1),
+                Text(
                   'LIVE RADAR SYNC',
                   style: WeatherType.overline.copyWith(
                     color: WeatherPalette.mistBlue,
                     fontWeight: FontWeight.w700,
                   ),
-                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-            ],
-          ),
+              ],
+            )
+          else
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: <Widget>[
+                Flexible(
+                  child: Text(
+                    'HOURLY FORECAST',
+                    style: WeatherType.overline,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                Flexible(
+                  child: Text(
+                    'LIVE RADAR SYNC',
+                    style: WeatherType.overline.copyWith(
+                      color: WeatherPalette.mistBlue,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
           const SizedBox(height: WeatherSpacing.space3),
           SizedBox(
             height: 140,
@@ -58,6 +78,10 @@ class HourlyForecastRail extends StatelessWidget {
                 final fits =
                     constraints.maxWidth >=
                     forecasts.length * WeatherLayout.forecastFitWidth;
+                final compactCellWidth = math.min(
+                  WeatherLayout.forecastCellWidth,
+                  (constraints.maxWidth - WeatherSpacing.space2 * 3) / 4,
+                );
                 if (fits) {
                   return Row(
                     children: List<Widget>.generate(
@@ -81,7 +105,7 @@ class HourlyForecastRail extends StatelessWidget {
                   separatorBuilder: (BuildContext context, int index) =>
                       const SizedBox(width: WeatherSpacing.space2),
                   itemBuilder: (BuildContext context, int index) => SizedBox(
-                    width: WeatherLayout.forecastCellWidth,
+                    width: compactCellWidth,
                     child: _ForecastCell(
                       forecast: forecasts[index],
                       isSelected: index == selectedIndex,
@@ -158,10 +182,7 @@ class _ForecastCell extends StatelessWidget {
                     ]
                   : null,
             ),
-            padding: const EdgeInsets.symmetric(
-              vertical: 4,
-              horizontal: 2,
-            ),
+            padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: <Widget>[

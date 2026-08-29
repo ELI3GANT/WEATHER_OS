@@ -6,22 +6,22 @@ import '../../../app/theme/weather_tokens.dart';
 import '../models/weather_condition.dart';
 import 'atmospheric_clouds.dart';
 
-enum DayPeriod {
-  night,
-  dawn,
-  day,
-  sunset,
-}
+enum DayPeriod { night, dawn, day, sunset }
 
 class WeatherAtmosphere extends StatefulWidget {
   const WeatherAtmosphere({
     required this.condition,
     this.customHour,
+    this.animationProgress,
     super.key,
-  });
+  }) : assert(
+         animationProgress == null ||
+             (animationProgress >= 0.0 && animationProgress <= 1.0),
+       );
 
   final WeatherCondition condition;
   final int? customHour;
+  final double? animationProgress;
 
   @override
   State<WeatherAtmosphere> createState() => _WeatherAtmosphereState();
@@ -32,7 +32,7 @@ class _WeatherAtmosphereState extends State<WeatherAtmosphere>
   late final AnimationController _controller = AnimationController(
     vsync: this,
     duration: const Duration(seconds: 12),
-  )..repeat();
+  );
 
   WeatherCondition? _prevCondition;
   DayPeriod? _prevPeriod;
@@ -73,6 +73,9 @@ class _WeatherAtmosphereState extends State<WeatherAtmosphere>
       _prevPeriod = oldPeriod;
       _fadeController.forward(from: 0.0);
     }
+    if (oldWidget.animationProgress != widget.animationProgress) {
+      _syncMotion();
+    }
   }
 
   @override
@@ -86,7 +89,9 @@ class _WeatherAtmosphereState extends State<WeatherAtmosphere>
     } else if (state == AppLifecycleState.resumed) {
       final reduceMotion =
           MediaQuery.maybeOf(context)?.disableAnimations ?? false;
-      if (!reduceMotion && !_controller.isAnimating) {
+      if (widget.animationProgress == null &&
+          !reduceMotion &&
+          !_controller.isAnimating) {
         _controller.repeat();
       }
     }
@@ -95,13 +100,20 @@ class _WeatherAtmosphereState extends State<WeatherAtmosphere>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    _syncMotion();
+  }
+
+  void _syncMotion() {
     final reduceMotion =
         MediaQuery.maybeOf(context)?.disableAnimations ?? false;
-    if (reduceMotion) {
+    if (widget.animationProgress != null) {
+      _controller.stop();
+    } else if (reduceMotion) {
       _controller.stop();
       _controller.value = 0.32;
     } else if (!_controller.isAnimating) {
-      final isResumed = WidgetsBinding.instance.lifecycleState == null ||
+      final isResumed =
+          WidgetsBinding.instance.lifecycleState == null ||
           WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
       if (isResumed) {
         _controller.repeat();
@@ -120,16 +132,21 @@ class _WeatherAtmosphereState extends State<WeatherAtmosphere>
   @override
   Widget build(BuildContext context) {
     final period = _resolvePeriod();
+    final progress = widget.animationProgress ?? _controller.value;
 
     return ExcludeSemantics(
       child: RepaintBoundary(
         key: const ValueKey<String>('weather-atmosphere-boundary'),
         child: AnimatedBuilder(
-          animation: Listenable.merge(<Listenable>[_controller, _fadeController]),
+          animation: Listenable.merge(<Listenable>[
+            _controller,
+            _fadeController,
+          ]),
           builder: (BuildContext context, Widget? child) {
             final rawFade = _fadeController.value;
             final fadeValue = Curves.easeInOutCubic.transform(rawFade);
-            final isFading = rawFade < 1.0 && _prevCondition != null && _prevPeriod != null;
+            final isFading =
+                rawFade < 1.0 && _prevCondition != null && _prevPeriod != null;
 
             return Stack(
               fit: StackFit.expand,
@@ -141,7 +158,7 @@ class _WeatherAtmosphereState extends State<WeatherAtmosphere>
                       painter: _AtmospherePainter(
                         condition: _prevCondition!,
                         period: _prevPeriod!,
-                        progress: _controller.value,
+                        progress: progress,
                       ),
                       child: const SizedBox.expand(),
                     ),
@@ -152,7 +169,7 @@ class _WeatherAtmosphereState extends State<WeatherAtmosphere>
                     painter: _AtmospherePainter(
                       condition: widget.condition,
                       period: period,
-                      progress: _controller.value,
+                      progress: progress,
                     ),
                     child: const SizedBox.expand(),
                   ),
@@ -220,29 +237,29 @@ class _AtmospherePainter extends CustomPainter {
     if (period == DayPeriod.night) {
       final nightColors = switch (condition) {
         WeatherCondition.storm => <Color>[
-            const Color(0xFF02040A),
-            WeatherPalette.stormViolet.withValues(alpha: 0.45),
-            const Color(0xFF060B18),
-            WeatherPalette.canvasDeep,
-          ],
+          const Color(0xFF02040A),
+          WeatherPalette.stormViolet.withValues(alpha: 0.45),
+          const Color(0xFF060B18),
+          WeatherPalette.canvasDeep,
+        ],
         WeatherCondition.rain => <Color>[
-            const Color(0xFF01060D),
-            const Color(0xFF081526),
-            const Color(0xFF0C2038),
-            WeatherPalette.canvasDeep,
-          ],
+          const Color(0xFF01060D),
+          const Color(0xFF081526),
+          const Color(0xFF0C2038),
+          WeatherPalette.canvasDeep,
+        ],
         WeatherCondition.snow => <Color>[
-            const Color(0xFF020814),
-            const Color(0xFF0D1B30),
-            const Color(0xFF162A45),
-            WeatherPalette.canvasDeep,
-          ],
+          const Color(0xFF020814),
+          const Color(0xFF0D1B30),
+          const Color(0xFF162A45),
+          WeatherPalette.canvasDeep,
+        ],
         _ => <Color>[
-            const Color(0xFF02060C),
-            const Color(0xFF061322),
-            const Color(0xFF091C33),
-            WeatherPalette.canvasDeep,
-          ],
+          const Color(0xFF02060C),
+          const Color(0xFF061322),
+          const Color(0xFF091C33),
+          WeatherPalette.canvasDeep,
+        ],
       };
       return LinearGradient(
         begin: Alignment.topCenter,
@@ -254,41 +271,41 @@ class _AtmospherePainter extends CustomPainter {
 
     final colors = switch (condition) {
       WeatherCondition.rain => <Color>[
-          WeatherPalette.canvasDeep,
-          WeatherPalette.canvasNavy,
-          WeatherPalette.lensLift.withValues(alpha: 0.9),
-          WeatherPalette.canvasNavy,
-        ],
+        WeatherPalette.canvasDeep,
+        WeatherPalette.canvasNavy,
+        WeatherPalette.lensLift.withValues(alpha: 0.9),
+        WeatherPalette.canvasNavy,
+      ],
       WeatherCondition.sunny => <Color>[
-          WeatherPalette.canvasNavy,
-          WeatherPalette.mistBlue.withValues(alpha: 0.75),
-          WeatherPalette.horizonAmber,
-          WeatherPalette.canvasDeep,
-        ],
+        WeatherPalette.canvasNavy,
+        WeatherPalette.mistBlue.withValues(alpha: 0.75),
+        WeatherPalette.horizonAmber,
+        WeatherPalette.canvasDeep,
+      ],
       WeatherCondition.storm => <Color>[
-          WeatherPalette.canvasDeep,
-          WeatherPalette.stormViolet.withValues(alpha: 0.6),
-          WeatherPalette.lensLift,
-          WeatherPalette.canvasNavy,
-        ],
+        WeatherPalette.canvasDeep,
+        WeatherPalette.stormViolet.withValues(alpha: 0.6),
+        WeatherPalette.lensLift,
+        WeatherPalette.canvasNavy,
+      ],
       WeatherCondition.cloudy => <Color>[
-          WeatherPalette.canvasDeep,
-          WeatherPalette.lensCore,
-          WeatherPalette.lensLift.withValues(alpha: 0.85),
-          WeatherPalette.canvasDeep,
-        ],
+        WeatherPalette.canvasDeep,
+        WeatherPalette.lensCore,
+        WeatherPalette.lensLift.withValues(alpha: 0.85),
+        WeatherPalette.canvasDeep,
+      ],
       WeatherCondition.snow => <Color>[
-          WeatherPalette.canvasNavy,
-          const Color(0xFF1E3A56),
-          WeatherPalette.lensLift,
-          WeatherPalette.canvasDeep,
-        ],
+        WeatherPalette.canvasNavy,
+        const Color(0xFF1E3A56),
+        WeatherPalette.lensLift,
+        WeatherPalette.canvasDeep,
+      ],
       WeatherCondition.fog => <Color>[
-          WeatherPalette.canvasDeep,
-          WeatherPalette.lensCore,
-          WeatherPalette.canvasNavy,
-          WeatherPalette.canvasDeep,
-        ],
+        WeatherPalette.canvasDeep,
+        WeatherPalette.lensCore,
+        WeatherPalette.canvasNavy,
+        WeatherPalette.canvasDeep,
+      ],
     };
     return LinearGradient(
       begin: Alignment.topLeft,
@@ -306,7 +323,8 @@ class _AtmospherePainter extends CustomPainter {
       final seedY = ((i * 59.41) % 0.65);
       final x = size.width * seedX;
       final y = size.height * seedY;
-      final twinkle = 0.35 + 0.65 * math.sin((progress * 6 * math.pi) + (i * 1.8)).abs();
+      final twinkle =
+          0.35 + 0.65 * math.sin((progress * 6 * math.pi) + (i * 1.8)).abs();
       final radius = (i % 4 == 0) ? 1.5 : 0.9;
 
       starPaint.color = Colors.white.withValues(alpha: twinkle * 0.8);
@@ -326,9 +344,14 @@ class _AtmospherePainter extends CustomPainter {
       ],
     );
     final bounds = Rect.fromCircle(center: center, radius: radius * 2.4);
-    canvas.drawCircle(center, radius * 2.4, Paint()..shader = glow.createShader(bounds));
+    canvas.drawCircle(
+      center,
+      radius * 2.4,
+      Paint()..shader = glow.createShader(bounds),
+    );
 
-    final moonPaint = Paint()..color = const Color(0xFFE6EEF8).withValues(alpha: 0.92);
+    final moonPaint = Paint()
+      ..color = const Color(0xFFE6EEF8).withValues(alpha: 0.92);
     canvas.drawCircle(center, radius * 0.48, moonPaint);
   }
 
@@ -343,7 +366,11 @@ class _AtmospherePainter extends CustomPainter {
       ],
     );
     final bounds = Rect.fromCircle(center: center, radius: radius);
-    canvas.drawCircle(center, radius, Paint()..shader = gradient.createShader(bounds));
+    canvas.drawCircle(
+      center,
+      radius,
+      Paint()..shader = gradient.createShader(bounds),
+    );
   }
 
   void _drawHorizon(Canvas canvas, Size size) {
@@ -357,7 +384,11 @@ class _AtmospherePainter extends CustomPainter {
       ],
     );
     final bounds = Rect.fromCircle(center: center, radius: radius);
-    canvas.drawCircle(center, radius, Paint()..shader = gradient.createShader(bounds));
+    canvas.drawCircle(
+      center,
+      radius,
+      Paint()..shader = gradient.createShader(bounds),
+    );
   }
 
   void _drawSunWithRays(Canvas canvas, Size size) {
@@ -375,7 +406,11 @@ class _AtmospherePainter extends CustomPainter {
       stops: const <double>[0.0, 0.45, 1.0],
     );
     final bounds = Rect.fromCircle(center: center, radius: radius);
-    canvas.drawCircle(center, radius, Paint()..shader = gradient.createShader(bounds));
+    canvas.drawCircle(
+      center,
+      radius,
+      Paint()..shader = gradient.createShader(bounds),
+    );
 
     // Sun Core
     canvas.drawCircle(
@@ -385,7 +420,11 @@ class _AtmospherePainter extends CustomPainter {
     );
   }
 
-  void _drawMultiLayerRain(Canvas canvas, Size size, {required double intensity}) {
+  void _drawMultiLayerRain(
+    Canvas canvas,
+    Size size, {
+    required double intensity,
+  }) {
     // Layer 1: Distant Light Rain (Slower)
     final bgRainPaint = Paint()
       ..color = WeatherPalette.mistBlue.withValues(alpha: 0.12 * intensity)
@@ -443,7 +482,8 @@ class _AtmospherePainter extends CustomPainter {
       ..style = PaintingStyle.fill
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 32);
     for (var i = 0; i < 4; i++) {
-      final drift = math.sin((progress + i * 0.25) * 2 * math.pi) * (size.width * 0.09);
+      final drift =
+          math.sin((progress + i * 0.25) * 2 * math.pi) * (size.width * 0.09);
       final y = size.height * (0.42 + i * 0.14);
       fogPaint.color = WeatherPalette.lensLift.withValues(alpha: 0.28);
       canvas.drawOval(

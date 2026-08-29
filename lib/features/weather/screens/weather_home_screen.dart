@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../../app/theme/weather_tokens.dart';
@@ -29,7 +30,14 @@ import '../widgets/weather_status_view.dart';
 import '../widgets/weather_weekly_outlook_card.dart';
 
 class WeatherHomeScreen extends StatefulWidget {
-  const WeatherHomeScreen({super.key});
+  const WeatherHomeScreen({
+    super.key,
+    this.currentTime,
+    this.atmosphereProgress,
+  });
+
+  final DateTime? currentTime;
+  final double? atmosphereProgress;
 
   @override
   State<WeatherHomeScreen> createState() => _WeatherHomeScreenState();
@@ -50,8 +58,9 @@ class _WeatherHomeScreenState extends State<WeatherHomeScreen> {
         _onTabSelected(WeatherNavTab.values[index]);
       }
     });
-    _headerActionSub =
-        WeatherNativeUIBridge.instance.onHeaderAction.listen((String action) {
+    _headerActionSub = WeatherNativeUIBridge.instance.onHeaderAction.listen((
+      String action,
+    ) {
       if (!mounted) return;
       if (action == 'refresh') {
         WeatherScope.read(context).refresh();
@@ -113,7 +122,7 @@ class _WeatherHomeScreenState extends State<WeatherHomeScreen> {
   int? _parseHourFromLabel(String label) {
     final clean = label.trim().toUpperCase();
     if (clean == 'NOW') {
-      return DateTime.now().hour;
+      return (widget.currentTime ?? DateTime.now()).hour;
     }
     final parts = clean.split(RegExp(r'\s+'));
     if (parts.length >= 2) {
@@ -132,10 +141,20 @@ class _WeatherHomeScreenState extends State<WeatherHomeScreen> {
   }
 
   String _formatTodayHeaderDate() {
-    final now = DateTime.now();
+    final now = widget.currentTime ?? DateTime.now();
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return 'Today • ${months[now.month - 1]} ${now.day}';
   }
@@ -156,7 +175,7 @@ class _WeatherHomeScreenState extends State<WeatherHomeScreen> {
         activeHour = _parseHourFromLabel(forecast.timeLabel);
       } else {
         activeCondition = weather.condition;
-        activeHour = DateTime.now().hour;
+        activeHour = (widget.currentTime ?? DateTime.now()).hour;
       }
     }
 
@@ -170,55 +189,62 @@ class _WeatherHomeScreenState extends State<WeatherHomeScreen> {
             child: WeatherAtmosphere(
               condition: activeCondition,
               customHour: activeHour,
+              animationProgress: widget.atmosphereProgress,
             ),
           ),
           SafeArea(
             bottom: false,
             child: ValueListenableBuilder<NativeInsets>(
               valueListenable: WeatherNativeUIBridge.instance.insetsNotifier,
-              builder: (BuildContext context, NativeInsets insets, Widget? child) {
-                return Column(
-                  children: <Widget>[
-                    // Top Platform Header Bar
-                    if (weather != null)
-                      WeatherPlatformHeader(
-                        location: weather.location,
-                        dateSubtitle: _formatTodayHeaderDate(),
-                        isOffline: provider.isOffline,
-                        onSettingsPressed: _openSettingsModal,
-                      ),
+              builder:
+                  (BuildContext context, NativeInsets insets, Widget? child) {
+                    return Column(
+                      children: <Widget>[
+                        // Top Platform Header Bar
+                        if (weather != null)
+                          WeatherPlatformHeader(
+                            location: weather.location,
+                            dateSubtitle: _formatTodayHeaderDate(),
+                            isOffline: provider.isOffline,
+                            onSettingsPressed: _openSettingsModal,
+                          ),
 
-                    // Main Tab Content
-                    Expanded(
-                      child: Padding(
-                        padding: EdgeInsets.only(
-                          bottom: (WeatherPlatform.isIOS(context) &&
-                                  WeatherNativeUIBridge.instance.isNativeBridgeAvailable)
-                              ? insets.bottom
-                              : 0.0,
-                        ),
-                        child: RepaintBoundary(
-                          key: const ValueKey<String>('weather-content-boundary'),
-                          child: _WeatherTabBody(
-                            provider: provider,
-                            currentTab: _currentTab,
-                            selectedForecastIndex: _selectedForecastIndex,
-                            onForecastSelected: _onForecastSelected,
+                        // Main Tab Content
+                        Expanded(
+                          child: Padding(
+                            padding: EdgeInsets.only(
+                              bottom:
+                                  (WeatherPlatform.isIOS(context) &&
+                                      WeatherNativeUIBridge
+                                          .instance
+                                          .isNativeBridgeAvailable)
+                                  ? insets.bottom
+                                  : 0.0,
+                            ),
+                            child: RepaintBoundary(
+                              key: const ValueKey<String>(
+                                'weather-content-boundary',
+                              ),
+                              child: _WeatherTabBody(
+                                provider: provider,
+                                currentTab: _currentTab,
+                                selectedForecastIndex: _selectedForecastIndex,
+                                onForecastSelected: _onForecastSelected,
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                    ),
 
-                    // Platform Navigation Bar (M3 on Android, suppressed/fallback on iOS)
-                    if (provider.state == WeatherLoadState.loaded)
-                      WeatherPlatformNavigationBar(
-                        currentTab: _currentTab,
-                        onTabSelected: _onTabSelected,
-                        alertCount: alertCount,
-                      ),
-                  ],
-                );
-              },
+                        // Platform Navigation Bar (M3 on Android, suppressed/fallback on iOS)
+                        if (provider.state == WeatherLoadState.loaded)
+                          WeatherPlatformNavigationBar(
+                            currentTab: _currentTab,
+                            onTabSelected: _onTabSelected,
+                            alertCount: alertCount,
+                          ),
+                      ],
+                    );
+                  },
             ),
           ),
         ],
@@ -246,55 +272,58 @@ class _WeatherTabBody extends StatelessWidget {
       WeatherLoadState.initial ||
       WeatherLoadState.loading => const WeatherLoadingView(),
       WeatherLoadState.loaded => AnimatedSwitcher(
-          duration: const Duration(milliseconds: 260),
-          transitionBuilder: (Widget child, Animation<double> animation) {
-            return FadeTransition(
-              opacity: CurvedAnimation(
-                parent: animation,
-                curve: Curves.easeOutCubic,
-              ),
-              child: SlideTransition(
-                position: Tween<Offset>(
-                  begin: const Offset(0, 0.02),
-                  end: Offset.zero,
-                ).animate(CurvedAnimation(
-                  parent: animation,
-                  curve: Curves.easeOutCubic,
-                )),
-                child: child,
-              ),
-            );
-          },
-          child: switch (currentTab) {
-            WeatherNavTab.today => _TodayDashboardView(
-                key: const ValueKey('tab_today'),
-                weather: provider.weather!,
-                selectedForecastIndex: selectedForecastIndex,
-                onForecastSelected: onForecastSelected,
-              ),
-            WeatherNavTab.hourly => _HourlyTabDetailView(
-                key: const ValueKey('tab_hourly'),
-                weather: provider.weather!,
-                selectedForecastIndex: selectedForecastIndex,
-                onForecastSelected: onForecastSelected,
-              ),
-            WeatherNavTab.daily => DailyForecastView(
-                key: const ValueKey('tab_daily'),
-                weather: provider.weather!,
-              ),
-            WeatherNavTab.radar => const RadarView(
-                key: ValueKey('tab_radar'),
-              ),
-            WeatherNavTab.alerts => WeatherAlertsView(
-                key: const ValueKey('tab_alerts'),
-                weather: provider.weather,
-              ),
-          },
-        ),
+        duration: MediaQuery.disableAnimationsOf(context)
+            ? Duration.zero
+            : const Duration(milliseconds: 260),
+        transitionBuilder: (Widget child, Animation<double> animation) {
+          return FadeTransition(
+            opacity: CurvedAnimation(
+              parent: animation,
+              curve: Curves.easeOutCubic,
+            ),
+            child: SlideTransition(
+              position:
+                  Tween<Offset>(
+                    begin: const Offset(0, 0.02),
+                    end: Offset.zero,
+                  ).animate(
+                    CurvedAnimation(
+                      parent: animation,
+                      curve: Curves.easeOutCubic,
+                    ),
+                  ),
+              child: child,
+            ),
+          );
+        },
+        child: switch (currentTab) {
+          WeatherNavTab.today => _TodayDashboardView(
+            key: const ValueKey('tab_today'),
+            weather: provider.weather!,
+            selectedForecastIndex: selectedForecastIndex,
+            onForecastSelected: onForecastSelected,
+          ),
+          WeatherNavTab.hourly => _HourlyTabDetailView(
+            key: const ValueKey('tab_hourly'),
+            weather: provider.weather!,
+            selectedForecastIndex: selectedForecastIndex,
+            onForecastSelected: onForecastSelected,
+          ),
+          WeatherNavTab.daily => DailyForecastView(
+            key: const ValueKey('tab_daily'),
+            weather: provider.weather!,
+          ),
+          WeatherNavTab.radar => const RadarView(key: ValueKey('tab_radar')),
+          WeatherNavTab.alerts => WeatherAlertsView(
+            key: const ValueKey('tab_alerts'),
+            weather: provider.weather,
+          ),
+        },
+      ),
       WeatherLoadState.error => WeatherErrorView(
-          message: provider.errorMessage!,
-          onRetry: provider.load,
-        ),
+        message: provider.errorMessage!,
+        onRetry: provider.load,
+      ),
     };
   }
 }

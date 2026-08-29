@@ -14,9 +14,11 @@ class WeatherShowcaseScreen extends StatelessWidget {
   const WeatherShowcaseScreen({
     super.key,
     this.weather = MockWeather.newYorkRain,
+    this.atmosphereHour,
   });
 
   final WeatherModel weather;
+  final int? atmosphereHour;
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +29,10 @@ class WeatherShowcaseScreen extends StatelessWidget {
           fit: StackFit.expand,
           children: <Widget>[
             Positioned.fill(
-              child: WeatherAtmosphere(condition: weather.condition),
+              child: WeatherAtmosphere(
+                condition: weather.condition,
+                customHour: atmosphereHour,
+              ),
             ),
             SafeArea(
               child: LayoutBuilder(

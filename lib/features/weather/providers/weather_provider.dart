@@ -10,16 +10,20 @@ import '../services/weather_repository.dart';
 
 enum WeatherLoadState { initial, loading, loaded, error }
 
+typedef WeatherTelemetryExporter = Future<void> Function(WeatherModel weather);
+
 class WeatherProvider extends ChangeNotifier {
   WeatherProvider({
     required this.repository,
     this.locationService,
     this.cacheService = const WeatherCacheService(),
+    this.telemetryExporter = WatchExportService.exportTelemetry,
   });
 
   final WeatherRepository repository;
   final LocationService? locationService;
   final WeatherCacheService? cacheService;
+  final WeatherTelemetryExporter telemetryExporter;
 
   WeatherLoadState _state = WeatherLoadState.initial;
   WeatherModel? _weather;
@@ -51,7 +55,9 @@ class WeatherProvider extends ChangeNotifier {
       return;
     }
 
-    _state = _weather != null ? WeatherLoadState.loaded : WeatherLoadState.loading;
+    _state = _weather != null
+        ? WeatherLoadState.loaded
+        : WeatherLoadState.loading;
     _errorMessage = null;
 
     // Hydrate from offline cache immediately on cold start
@@ -96,8 +102,7 @@ class WeatherProvider extends ChangeNotifier {
         if (cacheService != null) {
           await cacheService!.saveWeather(fresh);
         }
-        // Export telemetry to Apple Watch & iOS Home/Lock Screen Widgets
-        unawaited(WatchExportService.exportTelemetry(fresh));
+        unawaited(telemetryExporter(fresh));
       }
     } on Exception {
       if (!_isDisposed) {
@@ -116,8 +121,8 @@ class WeatherProvider extends ChangeNotifier {
   }
 
   Future<void> refresh() => load(
-        latitude: _latitude,
-        longitude: _longitude,
-        locationName: _locationName,
-      );
+    latitude: _latitude,
+    longitude: _longitude,
+    locationName: _locationName,
+  );
 }

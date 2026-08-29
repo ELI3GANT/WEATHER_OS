@@ -28,7 +28,38 @@ class _WeatherGlyphState extends State<WeatherGlyph>
   late final AnimationController _controller = AnimationController(
     vsync: this,
     duration: const Duration(seconds: 8),
-  )..repeat();
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    // Animation start deferred to didChangeDependencies so disableAnimations
+    // from MediaQuery is respected before any frames are scheduled.
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _syncAnimation();
+  }
+
+  @override
+  void didUpdateWidget(WeatherGlyph oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.animate != widget.animate) {
+      _syncAnimation();
+    }
+  }
+
+  void _syncAnimation() {
+    final reduceMotion =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    if (widget.animate && !reduceMotion && !_controller.isAnimating) {
+      _controller.repeat();
+    } else if (reduceMotion || !widget.animate) {
+      _controller.stop();
+    }
+  }
 
   @override
   void dispose() {
@@ -115,7 +146,10 @@ class _WeatherGlyphPainter extends CustomPainter {
             canvas.drawLine(
               Offset(x, startY),
               Offset(x - size.width * 0.03, endY.clamp(0, size.height * 0.94)),
-              rainPaint..color = WeatherPalette.mistBlue.withValues(alpha: (1.0 - phase * 0.5).clamp(0.2, 1.0)),
+              rainPaint
+                ..color = WeatherPalette.mistBlue.withValues(
+                  alpha: (1.0 - phase * 0.5).clamp(0.2, 1.0),
+                ),
             );
           }
         }
@@ -123,7 +157,7 @@ class _WeatherGlyphPainter extends CustomPainter {
       case WeatherCondition.sunny:
         final center = Offset(size.width * 0.5, size.height * 0.5);
         final radius = size.width * 0.2;
-        
+
         // Sun core
         canvas.drawCircle(center, radius, paint);
 
@@ -184,7 +218,9 @@ class _WeatherGlyphPainter extends CustomPainter {
 
       case WeatherCondition.fog:
         for (var index = 0; index < 3; index++) {
-          final waveDrift = math.sin((progress * 2 * math.pi) + (index * 0.8)) * (size.width * 0.04);
+          final waveDrift =
+              math.sin((progress * 2 * math.pi) + (index * 0.8)) *
+              (size.width * 0.04);
           final y = size.height * (0.38 + index * 0.18);
           final path = Path()
             ..moveTo(size.width * 0.18 + waveDrift, y)
