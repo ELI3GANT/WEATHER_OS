@@ -1,9 +1,16 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
 import '../../../app/theme/weather_tokens.dart';
-import 'glass_lens.dart';
+import '../../../core/platform_ui/weather_native_contracts.dart';
+import '../../../core/platform_ui/weather_native_ui_bridge.dart';
+import '../../../core/platform_ui/weather_platform.dart';
+import '../../../core/platform_ui/weather_platform_card.dart';
+import '../../../core/platform_ui/weather_platform_feedback.dart';
+import '../../../core/platform_ui/weather_platform_icons.dart';
+import '../../../core/platform_ui/weather_platform_segmented_control.dart';
 
 class RadarView extends StatefulWidget {
   const RadarView({super.key});
@@ -21,6 +28,8 @@ class _RadarViewState extends State<RadarView>
 
   int _selectedRangeIndex = 1; // 0: 50mi, 1: 100mi, 2: 250mi
   bool _isPlaying = true;
+  StreamSubscription<int>? _rangeSub;
+  StreamSubscription<void>? _playSub;
 
   static const List<String> _ranges = <String>['50 mi', '100 mi', '250 mi'];
 
@@ -28,6 +37,28 @@ class _RadarViewState extends State<RadarView>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _rangeSub = WeatherNativeUIBridge.instance.onRadarRangeChanged.listen((int index) {
+      if (index >= 0 && index < _ranges.length) {
+        setState(() {
+          _selectedRangeIndex = index;
+        });
+        _syncBridgeState();
+      }
+    });
+    _playSub = WeatherNativeUIBridge.instance.onRadarTogglePlay.listen((_) {
+      _togglePlay();
+    });
+    _syncBridgeState();
+  }
+
+  void _syncBridgeState() {
+    WeatherNativeUIBridge.instance.updateRadarControls(
+      RadarControlState(
+        isPlaying: _isPlaying,
+        selectedRangeIndex: _selectedRangeIndex,
+        ranges: _ranges,
+      ),
+    );
   }
 
   @override
@@ -45,6 +76,8 @@ class _RadarViewState extends State<RadarView>
 
   @override
   void dispose() {
+    _rangeSub?.cancel();
+    _playSub?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     _sweepController.dispose();
     super.dispose();
@@ -59,10 +92,14 @@ class _RadarViewState extends State<RadarView>
         _sweepController.stop();
       }
     });
+    _syncBridgeState();
   }
 
   @override
   Widget build(BuildContext context) {
+    final isIOS = WeatherPlatform.isIOS(context);
+    final isNativeActive = isIOS && WeatherNativeUIBridge.instance.isNativeBridgeAvailable;
+
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.all(WeatherSpacing.space4),
@@ -111,7 +148,7 @@ class _RadarViewState extends State<RadarView>
           const SizedBox(height: WeatherSpacing.space3),
 
           // Radar Canvas
-          GlassLens(
+          WeatherPlatformCard(
             padding: const EdgeInsets.all(WeatherSpacing.space4),
             child: Column(
               children: <Widget>[
@@ -131,85 +168,67 @@ class _RadarViewState extends State<RadarView>
                     },
                   ),
                 ),
-                const SizedBox(height: WeatherSpacing.space3),
+                if (!isNativeActive) ...<Widget>[
+                  const SizedBox(height: WeatherSpacing.space3),
 
-                // Interactive Controls (Range Chips + Play/Pause)
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: <Widget>[
-                    // Range chips
-                    Row(
-                      children: List<Widget>.generate(_ranges.length, (int index) {
-                        final isSelected = _selectedRangeIndex == index;
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 6),
-                          child: InkWell(
-                            onTap: () {
-                              setState(() {
-                                _selectedRangeIndex = index;
-                              });
-                            },
-                            borderRadius: BorderRadius.circular(WeatherRadii.pill),
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 180),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: isSelected
-                                    ? WeatherPalette.mistBlue.withValues(alpha: 0.22)
-                                    : WeatherPalette.lensLift.withValues(alpha: 0.3),
-                                borderRadius:
-                                    BorderRadius.circular(WeatherRadii.pill),
-                                border: Border.all(
-                                  color: isSelected
-                                      ? WeatherPalette.mistBlue
-                                      : WeatherPalette.lensRim.withValues(alpha: 0.15),
-                                ),
-                              ),
-                              child: Text(
-                                _ranges[index],
-                                style: WeatherType.label.copyWith(
-                                  fontSize: 11,
-                                  fontWeight:
-                                      isSelected ? FontWeight.w700 : FontWeight.w500,
-                                  color: isSelected
-                                      ? WeatherPalette.mistBlue
-                                      : WeatherPalette.textSecondary,
-                                ),
-                              ),
-                            ),
+                  // Platform-Adaptive Interactive Controls (Only in Flutter when not native-bridged)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: <Widget>[
+                      // Range Selector
+                      WeatherPlatformSegmentedControl<int>(
+                        groupValue: _selectedRangeIndex,
+                        onValueChanged: (int val) {
+                          setState(() {
+                            _selectedRangeIndex = val;
+                          });
+                          _syncBridgeState();
+                        },
+                        children: const <int, Widget>{
+                          0: Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            child: Text('50 mi', style: TextStyle(fontSize: 11)),
                           ),
-                        );
-                      }),
-                    ),
-
-                    // Play/Pause button
-                    IconButton(
-                      icon: Icon(
-                        _isPlaying
-                            ? Icons.pause_circle_filled_rounded
-                            : Icons.play_circle_fill_rounded,
-                        color: WeatherPalette.mistBlue,
-                        size: 26,
+                          1: Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            child: Text('100 mi', style: TextStyle(fontSize: 11)),
+                          ),
+                          2: Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            child: Text('250 mi', style: TextStyle(fontSize: 11)),
+                          ),
+                        },
                       ),
-                      onPressed: _togglePlay,
-                      tooltip: _isPlaying ? 'Pause Radar Sweep' : 'Resume Radar Sweep',
-                    ),
-                  ],
-                ),
+
+                      // Play/Pause button
+                      IconButton(
+                        icon: Icon(
+                          _isPlaying
+                              ? WeatherPlatformIcons.pause(context)
+                              : WeatherPlatformIcons.play(context),
+                          color: WeatherPalette.mistBlue,
+                          size: 26,
+                        ),
+                        onPressed: () {
+                          WeatherPlatformFeedback.light(context);
+                          _togglePlay();
+                        },
+                        tooltip: _isPlaying ? 'Pause Radar Sweep' : 'Resume Radar Sweep',
+                      ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),
           const SizedBox(height: WeatherSpacing.space3),
 
           // Intensity Legend
-          GlassLens(
+          WeatherPlatformCard(
             padding: const EdgeInsets.all(WeatherSpacing.space4),
-            child: Row(
+            child: const Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: const <Widget>[
+              children: <Widget>[
                 _RadarLegendItem(color: Color(0xFF69F0AE), label: 'Light'),
                 _RadarLegendItem(color: Color(0xFFFFB300), label: 'Moderate'),
                 _RadarLegendItem(color: Color(0xFFFF5252), label: 'Heavy'),

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme/weather_tokens.dart';
-import 'glass_lens.dart';
+import '../../../core/platform_ui/weather_platform_button.dart';
+import '../../../core/platform_ui/weather_platform_card.dart';
+import '../../../core/platform_ui/weather_platform_feedback.dart';
+import '../../../core/platform_ui/weather_platform_icons.dart';
 
 class WeatherSettingsModal extends StatelessWidget {
   const WeatherSettingsModal({
@@ -64,9 +67,9 @@ class WeatherSettingsModal extends StatelessWidget {
                             color: WeatherPalette.mistBlue.withValues(alpha: 0.4),
                           ),
                         ),
-                        child: const Center(
+                        child: Center(
                           child: Icon(
-                            Icons.tune_rounded,
+                            WeatherPlatformIcons.settings(context),
                             size: 18,
                             color: WeatherPalette.mistBlue,
                           ),
@@ -95,7 +98,7 @@ class WeatherSettingsModal extends StatelessWidget {
                     ],
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close_rounded, size: 20),
+                    icon: Icon(WeatherPlatformIcons.close(context), size: 20),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                 ],
@@ -103,11 +106,15 @@ class WeatherSettingsModal extends StatelessWidget {
               const SizedBox(height: WeatherSpacing.space4),
 
               // Zero-Subscription Pledge Card
-              GlassLens(
+              WeatherPlatformCard(
                 padding: const EdgeInsets.all(WeatherSpacing.space3),
                 child: Row(
                   children: <Widget>[
-                    const Text('🛡️', style: TextStyle(fontSize: 22)),
+                    Icon(
+                      WeatherPlatformIcons.shield(context),
+                      size: 24,
+                      color: const Color(0xFF69F0AE),
+                    ),
                     const SizedBox(width: WeatherSpacing.space3),
                     Expanded(
                       child: Column(
@@ -139,7 +146,7 @@ class WeatherSettingsModal extends StatelessWidget {
               const SizedBox(height: WeatherSpacing.space3),
 
               // Optional Creator Tip Jar Section
-              GlassLens(
+              WeatherPlatformCard(
                 padding: const EdgeInsets.all(WeatherSpacing.space3),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -170,6 +177,7 @@ class WeatherSettingsModal extends StatelessWidget {
                             title: 'Coffee',
                             amount: '\$1.99',
                             onTap: () {
+                              WeatherPlatformFeedback.selection(context);
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
                                   content: Text('Thank you for supporting independent software! ☕✨'),
@@ -186,6 +194,7 @@ class WeatherSettingsModal extends StatelessWidget {
                             title: 'Supercharge',
                             amount: '\$4.99',
                             onTap: () {
+                              WeatherPlatformFeedback.selection(context);
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
                                   content: Text('Supercharge support received! You rock! ⚡🚀'),
@@ -202,6 +211,7 @@ class WeatherSettingsModal extends StatelessWidget {
                             title: 'Patron',
                             amount: '\$9.99',
                             onTap: () {
+                              WeatherPlatformFeedback.selection(context);
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
                                   content: Text('OTP Founding Patron status acknowledged! 👑💎'),
@@ -218,30 +228,15 @@ class WeatherSettingsModal extends StatelessWidget {
               ),
               const SizedBox(height: WeatherSpacing.space3),
 
-              // Action Buttons (Refresh & Store links)
-              Row(
-                children: <Widget>[
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      icon: const Icon(Icons.sync_rounded, size: 16),
-                      label: const Text('Sync Telemetry'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: WeatherPalette.mistBlue,
-                        side: BorderSide(
-                          color: WeatherPalette.mistBlue.withValues(alpha: 0.4),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(WeatherRadii.control),
-                        ),
-                      ),
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                        onRefresh();
-                      },
-                    ),
-                  ),
-                ],
+              // Action Buttons (Refresh Telemetry)
+              WeatherPlatformButton(
+                icon: Icon(WeatherPlatformIcons.sync(context)),
+                variant: WeatherButtonVariant.primary,
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  onRefresh();
+                },
+                child: const Text('Sync Telemetry'),
               ),
               const SizedBox(height: WeatherSpacing.space2),
 

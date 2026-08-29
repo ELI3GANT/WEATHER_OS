@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme/weather_tokens.dart';
+import '../../../core/platform_ui/weather_platform_card.dart';
 import '../models/weather_model.dart';
-import 'glass_lens.dart';
 
 class WeatherMetricCardGrid extends StatelessWidget {
   const WeatherMetricCardGrid({
@@ -110,7 +110,7 @@ class WeatherMetricCardGrid extends StatelessWidget {
   }
 
   Widget _buildCard(_CardData c) {
-    return GlassLens(
+    return WeatherPlatformCard(
       padding: const EdgeInsets.symmetric(
         vertical: WeatherSpacing.space3,
         horizontal: WeatherSpacing.space2,

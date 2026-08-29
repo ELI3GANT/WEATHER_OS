@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme/weather_tokens.dart';
+import '../../../core/platform_ui/weather_platform_card.dart';
+import '../../../core/platform_ui/weather_platform_feedback.dart';
+import '../../../core/platform_ui/weather_platform_icons.dart';
 import '../models/weather_model.dart';
-import 'glass_lens.dart';
 import 'weather_glyph.dart';
 
 /// Premium smoked-glass 7-day weekly outlook card with interactive thermal spectrum bars.
@@ -38,7 +40,7 @@ class _WeatherWeeklyOutlookCardState extends State<WeatherWeeklyOutlookCard> {
     final range = (maxOverall - minOverall).clamp(1.0, 100.0);
     final currentTemp = widget.weather.temperature;
 
-    return GlassLens(
+    return WeatherPlatformCard(
       padding: const EdgeInsets.symmetric(
         vertical: WeatherSpacing.space3,
         horizontal: WeatherSpacing.space4,
@@ -50,7 +52,7 @@ class _WeatherWeeklyOutlookCardState extends State<WeatherWeeklyOutlookCard> {
           Row(
             children: <Widget>[
               Icon(
-                Icons.calendar_month_rounded,
+                WeatherPlatformIcons.daily(context),
                 size: 16,
                 color: WeatherPalette.mistBlue.withValues(alpha: 0.9),
               ),
@@ -84,6 +86,7 @@ class _WeatherWeeklyOutlookCardState extends State<WeatherWeeklyOutlookCard> {
               children: <Widget>[
                 InkWell(
                   onTap: () {
+                    WeatherPlatformFeedback.selection(context);
                     setState(() {
                       _expandedIndex = isExpanded ? null : index;
                     });

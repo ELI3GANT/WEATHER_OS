@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme/weather_tokens.dart';
+import '../../../core/platform_ui/weather_platform_card.dart';
 import '../models/weather_model.dart';
-import 'glass_lens.dart';
 
 class WeatherSevereRiskMatrix extends StatelessWidget {
   const WeatherSevereRiskMatrix({
@@ -49,7 +49,7 @@ class WeatherSevereRiskMatrix extends StatelessWidget {
       'tornado',
     ];
 
-    return GlassLens(
+    return WeatherPlatformCard(
       padding: const EdgeInsets.all(WeatherSpacing.space4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

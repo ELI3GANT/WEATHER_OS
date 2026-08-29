@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme/weather_tokens.dart';
+import '../../../core/platform_ui/weather_platform_card.dart';
 import '../models/hourly_forecast.dart';
 import '../models/weather_model.dart';
-import 'glass_lens.dart';
 
 class WeatherChartsCard extends StatelessWidget {
   const WeatherChartsCard({
@@ -20,7 +20,7 @@ class WeatherChartsCard extends StatelessWidget {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         final isWide = constraints.maxWidth >= 700;
-        final tempCard = GlassLens(
+        final tempCard = WeatherPlatformCard(
           padding: const EdgeInsets.all(WeatherSpacing.space4),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -68,7 +68,7 @@ class WeatherChartsCard extends StatelessWidget {
           ),
         );
 
-        final precipCard = GlassLens(
+        final precipCard = WeatherPlatformCard(
           padding: const EdgeInsets.all(WeatherSpacing.space4),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

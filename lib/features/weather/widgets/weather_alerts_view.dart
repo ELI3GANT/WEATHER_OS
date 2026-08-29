@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme/weather_tokens.dart';
+import '../../../core/platform_ui/weather_platform_card.dart';
+import '../../../core/platform_ui/weather_platform_icons.dart';
 import '../models/weather_condition.dart';
 import '../models/weather_model.dart';
-import 'glass_lens.dart';
 
 class WeatherAlertsView extends StatelessWidget {
   const WeatherAlertsView({
@@ -54,7 +55,7 @@ class WeatherAlertsView extends StatelessWidget {
                   children: <Widget>[
                     Icon(
                       hasAlerts
-                          ? Icons.warning_amber_rounded
+                          ? WeatherPlatformIcons.warning(context)
                           : Icons.check_circle_outline_rounded,
                       size: 12,
                       color: hasAlerts
@@ -82,8 +83,8 @@ class WeatherAlertsView extends StatelessWidget {
           const SizedBox(height: WeatherSpacing.space3),
 
           if (!hasAlerts) ...<Widget>[
-            // ALL CLEAR Glass Card
-            GlassLens(
+            // ALL CLEAR Platform Card
+            WeatherPlatformCard(
               padding: const EdgeInsets.all(WeatherSpacing.space6),
               child: Column(
                 children: <Widget>[
@@ -98,10 +99,10 @@ class WeatherAlertsView extends StatelessWidget {
                         width: 1.5,
                       ),
                     ),
-                    child: const Center(
+                    child: Center(
                       child: Icon(
-                        Icons.shield_rounded,
-                        color: Color(0xFF69F0AE),
+                        WeatherPlatformIcons.shield(context),
+                        color: const Color(0xFF69F0AE),
                         size: 28,
                       ),
                     ),
@@ -279,14 +280,14 @@ class _AlertCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GlassLens(
+    return WeatherPlatformCard(
       padding: const EdgeInsets.all(WeatherSpacing.space4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Row(
             children: <Widget>[
-              Icon(Icons.warning_amber_rounded, size: 22, color: severityColor),
+              Icon(WeatherPlatformIcons.warning(context), size: 22, color: severityColor),
               const SizedBox(width: WeatherSpacing.space2),
               Expanded(
                 child: Text(

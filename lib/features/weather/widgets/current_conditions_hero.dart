@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme/weather_tokens.dart';
+import '../../../core/platform_ui/weather_platform_card.dart';
 import '../../../core/utils/weather_formatters.dart';
 import '../models/weather_model.dart';
-import 'glass_lens.dart';
 import 'weather_glyph.dart';
 
 class CurrentConditionsHero extends StatelessWidget {
@@ -64,7 +64,7 @@ class CurrentConditionsHero extends StatelessWidget {
         builder: (BuildContext context, BoxConstraints constraints) {
           final isCompact = constraints.maxWidth < 500;
 
-          return GlassLens(
+          return WeatherPlatformCard(
             padding: const EdgeInsets.all(WeatherSpacing.space4),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme/weather_tokens.dart';
+import '../../../core/platform_ui/weather_platform_card.dart';
 import '../models/weather_model.dart';
-import 'glass_lens.dart';
 
 class WeatherImpactMeterCard extends StatelessWidget {
   const WeatherImpactMeterCard({
@@ -45,7 +45,7 @@ class WeatherImpactMeterCard extends StatelessWidget {
       builder: (BuildContext context, BoxConstraints constraints) {
         final isWide = constraints.maxWidth >= 500;
 
-        final expectCard = GlassLens(
+        final expectCard = WeatherPlatformCard(
           padding: const EdgeInsets.all(WeatherSpacing.space4),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -58,15 +58,12 @@ class WeatherImpactMeterCard extends StatelessWidget {
                   padding: const EdgeInsets.only(bottom: WeatherSpacing.space2),
                   child: Row(
                     children: <Widget>[
-                      Icon(_adviceIcon(tip), size: 18, color: WeatherPalette.mistBlue),
+                      Icon(_adviceIcon(tip), size: 16, color: WeatherPalette.mistBlue),
                       const SizedBox(width: WeatherSpacing.space2),
                       Expanded(
                         child: Text(
                           tip,
-                          style: WeatherType.body.copyWith(
-                            fontSize: 13,
-                            color: WeatherPalette.textPrimary,
-                          ),
+                          style: WeatherType.label.copyWith(fontSize: 12),
                         ),
                       ),
                     ],
@@ -77,7 +74,7 @@ class WeatherImpactMeterCard extends StatelessWidget {
           ),
         );
 
-        final impactCard = GlassLens(
+        final impactCard = WeatherPlatformCard(
           padding: const EdgeInsets.all(WeatherSpacing.space4),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

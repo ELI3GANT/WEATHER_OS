@@ -1,6 +1,13 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../../app/theme/weather_tokens.dart';
+import '../../../core/platform_ui/weather_native_contracts.dart';
+import '../../../core/platform_ui/weather_native_ui_bridge.dart';
+import '../../../core/platform_ui/weather_platform.dart';
+import '../../../core/platform_ui/weather_platform_header.dart';
+import '../../../core/platform_ui/weather_platform_navigation_bar.dart';
+import '../../../core/platform_ui/weather_platform_sheet.dart';
 import '../models/weather_condition.dart';
 import '../models/weather_model.dart';
 import '../providers/weather_provider.dart';
@@ -31,6 +38,35 @@ class WeatherHomeScreen extends StatefulWidget {
 class _WeatherHomeScreenState extends State<WeatherHomeScreen> {
   int _selectedForecastIndex = 0;
   WeatherNavTab _currentTab = WeatherNavTab.today;
+  StreamSubscription<int>? _tabSub;
+  StreamSubscription<String>? _headerActionSub;
+
+  @override
+  void initState() {
+    super.initState();
+    WeatherNativeUIBridge.instance.initialize();
+    _tabSub = WeatherNativeUIBridge.instance.onTabSelected.listen((int index) {
+      if (index >= 0 && index < WeatherNavTab.values.length) {
+        _onTabSelected(WeatherNavTab.values[index]);
+      }
+    });
+    _headerActionSub =
+        WeatherNativeUIBridge.instance.onHeaderAction.listen((String action) {
+      if (!mounted) return;
+      if (action == 'refresh') {
+        WeatherScope.read(context).refresh();
+      } else if (action == 'settings') {
+        _openSettingsModal();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _tabSub?.cancel();
+    _headerActionSub?.cancel();
+    super.dispose();
+  }
 
   void _onForecastSelected(int index) {
     setState(() {
@@ -38,10 +74,40 @@ class _WeatherHomeScreenState extends State<WeatherHomeScreen> {
     });
   }
 
+  int _getAlertCount(WeatherModel? weather) {
+    if (weather == null) return 0;
+    if (weather.riskLevel == 'HIGH RISK') return 2;
+    if (weather.riskLevel == 'MODERATE RISK' ||
+        weather.condition == WeatherCondition.storm ||
+        weather.condition == WeatherCondition.rain) {
+      return 1;
+    }
+    return 0;
+  }
+
   void _onTabSelected(WeatherNavTab tab) {
     setState(() {
       _currentTab = tab;
     });
+    final alertCount = _getAlertCount(WeatherScope.read(context).weather);
+    WeatherNativeUIBridge.instance.updateNavigationState(
+      NavigationState(
+        selectedTab: tab.index,
+        tabCount: WeatherNavTab.values.length,
+        alertCount: alertCount,
+      ),
+    );
+  }
+
+  void _openSettingsModal() {
+    WeatherPlatformSheet.show<void>(
+      context: context,
+      sheetType: 'settings',
+      title: 'Station Intelligence & Settings',
+      builder: (BuildContext ctx) => WeatherSettingsModal(
+        onRefresh: () => WeatherScope.read(context).refresh(),
+      ),
+    );
   }
 
   int? _parseHourFromLabel(String label) {
@@ -94,6 +160,8 @@ class _WeatherHomeScreenState extends State<WeatherHomeScreen> {
       }
     }
 
+    final alertCount = _getAlertCount(weather);
+
     return Scaffold(
       body: Stack(
         fit: StackFit.expand,
@@ -106,136 +174,51 @@ class _WeatherHomeScreenState extends State<WeatherHomeScreen> {
           ),
           SafeArea(
             bottom: false,
-            child: Column(
-              children: <Widget>[
-                // Top Header Bar
-                if (weather != null)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: WeatherSpacing.space4,
-                      vertical: WeatherSpacing.space2,
-                    ),
-                    child: Row(
-                      children: <Widget>[
-                        const Icon(
-                          Icons.location_on_rounded,
-                          size: 20,
-                          color: WeatherPalette.mistBlue,
+            child: ValueListenableBuilder<NativeInsets>(
+              valueListenable: WeatherNativeUIBridge.instance.insetsNotifier,
+              builder: (BuildContext context, NativeInsets insets, Widget? child) {
+                return Column(
+                  children: <Widget>[
+                    // Top Platform Header Bar
+                    if (weather != null)
+                      WeatherPlatformHeader(
+                        location: weather.location,
+                        dateSubtitle: _formatTodayHeaderDate(),
+                        isOffline: provider.isOffline,
+                        onSettingsPressed: _openSettingsModal,
+                      ),
+
+                    // Main Tab Content
+                    Expanded(
+                      child: Padding(
+                        padding: EdgeInsets.only(
+                          bottom: (WeatherPlatform.isIOS(context) &&
+                                  WeatherNativeUIBridge.instance.isNativeBridgeAvailable)
+                              ? insets.bottom
+                              : 0.0,
                         ),
-                        const SizedBox(width: WeatherSpacing.space1),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: <Widget>[
-                            Text(
-                              weather.location,
-                              style: WeatherType.title.copyWith(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                                color: WeatherPalette.textPrimary,
-                              ),
-                            ),
-                            Row(
-                              children: <Widget>[
-                                Text(
-                                  _formatTodayHeaderDate(),
-                                  style: WeatherType.label.copyWith(
-                                    fontSize: 11,
-                                    color: WeatherPalette.textSecondary,
-                                  ),
-                                ),
-                                if (provider.isOffline) ...<Widget>[
-                                  const SizedBox(width: 6),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 5,
-                                      vertical: 1,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: WeatherPalette.horizonAmber
-                                          .withValues(alpha: 0.15),
-                                      borderRadius:
-                                          BorderRadius.circular(WeatherRadii.pill),
-                                      border: Border.all(
-                                        color: WeatherPalette.horizonAmber
-                                            .withValues(alpha: 0.35),
-                                      ),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: <Widget>[
-                                        const Icon(
-                                          Icons.cloud_off_rounded,
-                                          size: 10,
-                                          color: WeatherPalette.horizonAmber,
-                                        ),
-                                        const SizedBox(width: 3),
-                                        Text(
-                                          'CACHED',
-                                          style: WeatherType.label.copyWith(
-                                            fontSize: 9,
-                                            fontWeight: FontWeight.w700,
-                                            color: WeatherPalette.horizonAmber,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ],
-                        ),
-                        const Spacer(),
-                        IconButton(
-                          icon: const Icon(
-                            Icons.tune_rounded,
-                            color: WeatherPalette.textPrimary,
+                        child: RepaintBoundary(
+                          key: const ValueKey<String>('weather-content-boundary'),
+                          child: _WeatherTabBody(
+                            provider: provider,
+                            currentTab: _currentTab,
+                            selectedForecastIndex: _selectedForecastIndex,
+                            onForecastSelected: _onForecastSelected,
                           ),
-                          onPressed: () {
-                            showModalBottomSheet<void>(
-                              context: context,
-                              backgroundColor: Colors.transparent,
-                              isScrollControlled: true,
-                              builder: (BuildContext ctx) => WeatherSettingsModal(
-                                onRefresh: () => WeatherScope.read(context).refresh(),
-                              ),
-                            );
-                          },
-                          tooltip: 'Station Intelligence & Settings',
                         ),
-                      ],
+                      ),
                     ),
-                  ),
 
-                // Main Tab Content
-                Expanded(
-                  child: RepaintBoundary(
-                    key: const ValueKey<String>('weather-content-boundary'),
-                    child: _WeatherTabBody(
-                      provider: provider,
-                      currentTab: _currentTab,
-                      selectedForecastIndex: _selectedForecastIndex,
-                      onForecastSelected: _onForecastSelected,
-                    ),
-                  ),
-                ),
-
-                // Bottom Optical Glass Navigation Bar
-                if (provider.state == WeatherLoadState.loaded)
-                  WeatherBottomNavBar(
-                    currentTab: _currentTab,
-                    onTabSelected: _onTabSelected,
-                    alertCount: (weather != null && weather.riskLevel == 'HIGH RISK')
-                        ? 2
-                        : ((weather != null &&
-                                (weather.riskLevel == 'MODERATE RISK' ||
-                                    weather.condition == WeatherCondition.storm ||
-                                    weather.condition == WeatherCondition.rain))
-                            ? 1
-                            : 0),
-                  ),
-              ],
+                    // Platform Navigation Bar (M3 on Android, suppressed/fallback on iOS)
+                    if (provider.state == WeatherLoadState.loaded)
+                      WeatherPlatformNavigationBar(
+                        currentTab: _currentTab,
+                        onTabSelected: _onTabSelected,
+                        alertCount: alertCount,
+                      ),
+                  ],
+                );
+              },
             ),
           ),
         ],

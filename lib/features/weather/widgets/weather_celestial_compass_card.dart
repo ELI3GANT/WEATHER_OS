@@ -3,8 +3,9 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../../app/theme/weather_tokens.dart';
+import '../../../core/platform_ui/weather_platform_card.dart';
+import '../../../core/platform_ui/weather_platform_icons.dart';
 import '../models/weather_model.dart';
-import 'glass_lens.dart';
 
 class WeatherCelestialCompassCard extends StatelessWidget {
   const WeatherCelestialCompassCard({
@@ -53,7 +54,7 @@ class WeatherCelestialCompassCard extends StatelessWidget {
       builder: (BuildContext context, BoxConstraints constraints) {
         final isWide = constraints.maxWidth >= 500;
 
-        final sunCard = GlassLens(
+        final sunCard = WeatherPlatformCard(
           padding: const EdgeInsets.all(WeatherSpacing.space4),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -71,9 +72,13 @@ class WeatherCelestialCompassCard extends StatelessWidget {
                     child: Stack(
                       alignment: Alignment.topCenter,
                       children: <Widget>[
-                        const Positioned(
+                        Positioned(
                           top: 0,
-                          child: Icon(Icons.wb_sunny_rounded, size: 20, color: WeatherPalette.horizonAmber),
+                          child: Icon(
+                            WeatherPlatformIcons.sun(context),
+                            size: 20,
+                            color: WeatherPalette.horizonAmber,
+                          ),
                         ),
                         Positioned(
                           top: 24,
@@ -121,9 +126,13 @@ class WeatherCelestialCompassCard extends StatelessWidget {
                             ),
                           ),
                         ),
-                        const Positioned(
+                        Positioned(
                           bottom: 0,
-                          child: Icon(Icons.nightlight_round, size: 18, color: WeatherPalette.mistBlue),
+                          child: Icon(
+                            WeatherPlatformIcons.moon(context),
+                            size: 18,
+                            color: WeatherPalette.mistBlue,
+                          ),
                         ),
                       ],
                     ),
@@ -141,20 +150,20 @@ class WeatherCelestialCompassCard extends StatelessWidget {
                         Text('Sunrise', style: WeatherType.label.copyWith(fontSize: 11)),
                         const SizedBox(height: WeatherSpacing.space2),
                         Text(
-                          weather.daylightDuration,
-                          style: WeatherType.label.copyWith(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: WeatherPalette.horizonAmber,
-                          ),
-                        ),
-                        Text('Daylight', style: WeatherType.label.copyWith(fontSize: 10, color: WeatherPalette.textTertiary)),
-                        const SizedBox(height: WeatherSpacing.space2),
-                        Text(
                           weather.sunsetTime,
                           style: WeatherType.metricValue.copyWith(fontSize: 16, fontWeight: FontWeight.w700),
                         ),
                         Text('Sunset', style: WeatherType.label.copyWith(fontSize: 11)),
+                        const SizedBox(height: WeatherSpacing.space2),
+                        Text(
+                          weather.daylightDuration,
+                          style: WeatherType.metricValue.copyWith(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: WeatherPalette.mistBlue,
+                          ),
+                        ),
+                        Text('Daylight span', style: WeatherType.label.copyWith(fontSize: 10)),
                       ],
                     ),
                   ),
@@ -164,7 +173,7 @@ class WeatherCelestialCompassCard extends StatelessWidget {
           ),
         );
 
-        final compassCard = GlassLens(
+        final compassCard = WeatherPlatformCard(
           padding: const EdgeInsets.all(WeatherSpacing.space4),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,

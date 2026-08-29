@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme/weather_tokens.dart';
+import '../../../core/platform_ui/weather_platform_card.dart';
+import '../../../core/platform_ui/weather_platform_feedback.dart';
 import '../../../core/utils/weather_formatters.dart';
 import '../models/hourly_forecast.dart';
-import 'glass_lens.dart';
 import 'weather_glyph.dart';
 import 'weather_threat_bar.dart';
 
@@ -21,7 +22,7 @@ class HourlyForecastRail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GlassLens(
+    return WeatherPlatformCard(
       padding: const EdgeInsets.all(WeatherSpacing.space4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -122,7 +123,12 @@ class _ForecastCell extends StatelessWidget {
           '${forecast.timeLabel}, ${forecast.temperature.round()} degrees, '
           '${forecast.condition.label}, ${forecast.precipChance} percent chance of rain',
       child: InkWell(
-        onTap: onTap,
+        onTap: onTap == null
+            ? null
+            : () {
+                WeatherPlatformFeedback.selection(context);
+                onTap!();
+              },
         borderRadius: BorderRadius.circular(WeatherRadii.control),
         child: AnimatedScale(
           scale: active ? 1.04 : 1.0,

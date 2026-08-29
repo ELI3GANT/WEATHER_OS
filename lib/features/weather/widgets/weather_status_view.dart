@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme/weather_tokens.dart';
+import '../../../core/platform_ui/weather_platform_button.dart';
 
 class WeatherLoadingView extends StatelessWidget {
   const WeatherLoadingView({super.key});
@@ -58,18 +59,8 @@ class WeatherErrorView extends StatelessWidget {
             const SizedBox(height: WeatherSpacing.space3),
             Text(message, style: WeatherType.body, textAlign: TextAlign.center),
             const SizedBox(height: WeatherSpacing.space8),
-            FilledButton.tonal(
-              style: FilledButton.styleFrom(
-                backgroundColor: WeatherPalette.lensLift,
-                foregroundColor: WeatherPalette.textPrimary,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(WeatherRadii.control),
-                  side: BorderSide(
-                    color: WeatherPalette.mistBlue.withValues(alpha: 0.3),
-                  ),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              ),
+            WeatherPlatformButton(
+              variant: WeatherButtonVariant.primary,
               onPressed: onRetry,
               child: const Text('Retry Telemetry'),
             ),
