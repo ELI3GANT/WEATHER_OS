@@ -40,10 +40,10 @@ jobs:
 
     steps:
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Configure Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
@@ -53,8 +53,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          yes | sdkmanager --licenses >/dev/null
-          sdkmanager \
+          sdkmanager_path="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager -print -quit)"
+          if [[ -z "$sdkmanager_path" ]]; then
+            echo "sdkmanager was not found below $ANDROID_HOME/cmdline-tools" >&2
+            exit 1
+          fi
+          yes | "$sdkmanager_path" --licenses >/dev/null
+          "$sdkmanager_path" \
             "platforms;android-${ANDROID_API_LEVEL}" \
             "build-tools;${ANDROID_BUILD_TOOLS}"
 
