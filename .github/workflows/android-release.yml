@@ -90,8 +90,22 @@ jobs:
       - name: Analyze
         run: flutter analyze
 
-      - name: Test
-        run: flutter test
+      - name: Test functional suite
+        run: flutter test test/*.dart
+
+      - name: Capture visual golden diagnostics
+        id: golden-tests
+        continue-on-error: true
+        run: flutter test test/visual
+
+      - name: Retain visual golden diagnostics
+        if: ${{ steps.golden-tests.outcome == 'failure' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: weatheros-golden-diagnostics-${{ github.run_number }}
+          path: test/visual/failures/
+          if-no-files-found: error
+          retention-days: 14
 
       - name: Require Android signing secrets
         env:

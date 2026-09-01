@@ -8,7 +8,9 @@ host artifacts required for release builds on Linux ARM64.
 
 - Flutter `3.47.2` and Java `17` are pinned.
 - Android API `36` and build tools `36.0.0` are installed explicitly.
-- Static analysis and all Flutter tests must pass on the pinned x86_64 runner.
+- Static analysis and the platform-neutral functional suite must pass.
+- Visual golden tests run on the pinned x86_64 runner; mismatches are retained
+  as diagnostic artifacts and never overwrite the reviewed baselines.
 - The AAB must be signed with the registered WeatherOS upload key.
 - The upload certificate SHA-256 must match the expected Play Console value.
 - The generated AAB must target API `36` and use `app.weatheros.app`.
