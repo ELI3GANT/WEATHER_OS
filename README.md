@@ -29,6 +29,10 @@ flutter test
 flutter build appbundle --release
 ```
 
+The canonical signed Android release path is the manually dispatched
+`Android Release` GitHub Actions workflow. See `ANDROID_RELEASE.md` for its
+required secrets, verification gates, and non-production Play tracks.
+
 ## Store & Platform Availability
 
 ### DOWNLOAD NOW
@@ -51,5 +55,4 @@ flutter build appbundle --release
 - **Release Signing:** Keystore configuration managed via `android/key.properties` (see `android/key.properties.example`).
 - **Android Target:** Android App Bundle (`.aab`) production release for Google Play.
 - **iOS Target:** Archive & IPA build via `scripts/build_appstore_ipa.sh`.
-
 

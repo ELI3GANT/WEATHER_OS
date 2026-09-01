@@ -1,0 +1,206 @@
+name: Android Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish_to_play:
+        description: Upload the verified AAB to Google Play
+        required: true
+        default: false
+        type: boolean
+      track:
+        description: Non-production Google Play track
+        required: true
+        default: internal
+        type: choice
+        options:
+          - internal
+          - alpha
+          - beta
+
+concurrency:
+  group: weatheros-android-release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  FLUTTER_VERSION: 3.47.2
+  JAVA_VERSION: 17
+  ANDROID_API_LEVEL: 36
+  ANDROID_BUILD_TOOLS: 36.0.0
+  PACKAGE_NAME: app.weatheros.app
+
+jobs:
+  verify-build-publish:
+    name: Verify, build, and optionally publish Android
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Configure Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: gradle
+
+      - name: Install Android API 36
+        shell: bash
+        run: |
+          set -euo pipefail
+          yes | sdkmanager --licenses >/dev/null
+          sdkmanager \
+            "platforms;android-${ANDROID_API_LEVEL}" \
+            "build-tools;${ANDROID_BUILD_TOOLS}"
+
+      - name: Install official Flutter SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/flutter.tar.xz"
+          curl --fail --location --retry 3 \
+            --output "$archive" \
+            "https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_${FLUTTER_VERSION}-stable.tar.xz"
+          tar -xf "$archive" -C "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/flutter/bin" >> "$GITHUB_PATH"
+
+      - name: Report toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          flutter config --no-analytics
+          flutter --version
+          flutter doctor -v
+
+      - name: Restore dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Test
+        run: flutter test
+
+      - name: Require Android signing secrets
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+          ANDROID_UPLOAD_CERT_SHA256: ${{ secrets.ANDROID_UPLOAD_CERT_SHA256 }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          for name in \
+            ANDROID_KEYSTORE_BASE64 \
+            ANDROID_KEY_ALIAS \
+            ANDROID_KEY_PASSWORD \
+            ANDROID_STORE_PASSWORD \
+            ANDROID_UPLOAD_CERT_SHA256; do
+            if [[ -z "${!name:-}" ]]; then
+              echo "Required GitHub Actions secret is missing: $name" >&2
+              exit 1
+            fi
+          done
+
+      - name: Configure and verify upload signing
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+          ANDROID_UPLOAD_CERT_SHA256: ${{ secrets.ANDROID_UPLOAD_CERT_SHA256 }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          keystore="$RUNNER_TEMP/weatheros-upload.jks"
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$keystore"
+          chmod 600 "$keystore"
+
+          cat > android/key.properties <<EOF
+          storePassword=$ANDROID_STORE_PASSWORD
+          keyPassword=$ANDROID_KEY_PASSWORD
+          keyAlias=$ANDROID_KEY_ALIAS
+          storeFile=$keystore
+          EOF
+          chmod 600 android/key.properties
+
+          actual_sha256="$({ keytool -list -v \
+            -keystore "$keystore" \
+            -storepass "$ANDROID_STORE_PASSWORD" \
+            -alias "$ANDROID_KEY_ALIAS"; } | awk -F': ' '/SHA256:/{gsub(":", "", $2); print toupper($2); exit}')"
+          expected_sha256="$(printf '%s' "$ANDROID_UPLOAD_CERT_SHA256" | tr -d ':' | tr '[:lower:]' '[:upper:]')"
+          if [[ -z "$actual_sha256" || "$actual_sha256" != "$expected_sha256" ]]; then
+            echo "Upload certificate SHA-256 does not match the Play Console certificate." >&2
+            exit 1
+          fi
+
+      - name: Build signed Android App Bundle
+        run: flutter build appbundle --release
+
+      - name: Verify release bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          aab="build/app/outputs/bundle/release/app-release.aab"
+          test -s "$aab"
+          target_sdk="$(apkanalyzer manifest target-sdk "$aab")"
+          package_name="$(apkanalyzer manifest application-id "$aab")"
+          if [[ "$target_sdk" != "$ANDROID_API_LEVEL" ]]; then
+            echo "Expected target SDK $ANDROID_API_LEVEL, got $target_sdk" >&2
+            exit 1
+          fi
+          if [[ "$package_name" != "$PACKAGE_NAME" ]]; then
+            echo "Expected package $PACKAGE_NAME, got $package_name" >&2
+            exit 1
+          fi
+          sha256sum "$aab" | tee build/app/outputs/bundle/release/app-release.aab.sha256
+
+      - name: Retain verified AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: weatheros-android-${{ github.run_number }}
+          path: |
+            build/app/outputs/bundle/release/app-release.aab
+            build/app/outputs/bundle/release/app-release.aab.sha256
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Require Google Play credentials
+        if: ${{ inputs.publish_to_play }}
+        env:
+          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "$GOOGLE_PLAY_SERVICE_ACCOUNT_JSON" ]]; then
+            echo "Required GitHub Actions secret is missing: GOOGLE_PLAY_SERVICE_ACCOUNT_JSON" >&2
+            exit 1
+          fi
+
+      - name: Upload to non-production Google Play track
+        if: ${{ inputs.publish_to_play }}
+        env:
+          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          PLAY_TRACK: ${{ inputs.track }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          credentials="$RUNNER_TEMP/google-play-service-account.json"
+          printf '%s' "$GOOGLE_PLAY_SERVICE_ACCOUNT_JSON" > "$credentials"
+          chmod 600 "$credentials"
+          sudo gem install fastlane --no-document
+          fastlane supply \
+            --json_key "$credentials" \
+            --package_name "$PACKAGE_NAME" \
+            --aab build/app/outputs/bundle/release/app-release.aab \
+            --track "$PLAY_TRACK" \
+            --release_status completed \
+            --skip_upload_metadata true \
+            --skip_upload_images true \
+            --skip_upload_screenshots true
