@@ -11,6 +11,7 @@ class WeatherPlatformHeader extends StatelessWidget {
     required this.location,
     required this.dateSubtitle,
     required this.onSettingsPressed,
+    this.onLocationPressed,
     this.isOffline = false,
     super.key,
   });
@@ -18,6 +19,7 @@ class WeatherPlatformHeader extends StatelessWidget {
   final String location;
   final String dateSubtitle;
   final VoidCallback onSettingsPressed;
+  final VoidCallback? onLocationPressed;
   final bool isOffline;
 
   @override
@@ -34,25 +36,26 @@ class WeatherPlatformHeader extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: <Widget>[
-            Icon(
-              WeatherPlatformIcons.location(context),
-              size: 18,
-              color: WeatherPalette.mistBlue,
+            GestureDetector(
+              onTap: onLocationPressed,
+              child: Icon(WeatherPlatformIcons.location(context), size: 18, color: WeatherPalette.mistBlue),
             ),
             const SizedBox(width: WeatherSpacing.space2),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
-                Text(
-                  location,
-                  style: WeatherType.title.copyWith(
+                GestureDetector(
+                  onTap: onLocationPressed,
+                  child: Text(
+                    location,
+                    style: WeatherType.title.copyWith(
                     fontSize: 17,
                     fontWeight: FontWeight.w700,
                     letterSpacing: -0.3,
                     color: WeatherPalette.textPrimary,
+                    ),
                   ),
-                ),
                 Row(
                   children: <Widget>[
                     Text(
@@ -70,13 +73,16 @@ class WeatherPlatformHeader extends StatelessWidget {
                           vertical: 1,
                         ),
                         decoration: BoxDecoration(
-                          color: WeatherPalette.horizonAmber
-                              .withValues(alpha: 0.15),
-                          borderRadius:
-                              BorderRadius.circular(WeatherRadii.pill),
+                          color: WeatherPalette.horizonAmber.withValues(
+                            alpha: 0.15,
+                          ),
+                          borderRadius: BorderRadius.circular(
+                            WeatherRadii.pill,
+                          ),
                           border: Border.all(
-                            color: WeatherPalette.horizonAmber
-                                .withValues(alpha: 0.35),
+                            color: WeatherPalette.horizonAmber.withValues(
+                              alpha: 0.35,
+                            ),
                           ),
                         ),
                         child: Row(
@@ -130,76 +136,88 @@ class WeatherPlatformHeader extends StatelessWidget {
       ),
       child: Row(
         children: <Widget>[
-          Icon(
-            WeatherPlatformIcons.location(context),
-            size: 20,
-            color: WeatherPalette.mistBlue,
+          GestureDetector(
+            onTap: onLocationPressed,
+            child: Icon(WeatherPlatformIcons.location(context), size: 20, color: WeatherPalette.mistBlue),
           ),
           const SizedBox(width: WeatherSpacing.space2),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Text(
-                location,
-                style: WeatherType.title.copyWith(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: WeatherPalette.textPrimary,
-                ),
-              ),
-              Row(
-                children: <Widget>[
-                  Text(
-                    dateSubtitle,
-                    style: WeatherType.label.copyWith(
-                      fontSize: 11,
-                      color: WeatherPalette.textSecondary,
-                    ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                GestureDetector(
+                  onTap: onLocationPressed,
+                  child: Text(
+                    location,
+                    maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: WeatherType.title.copyWith(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: WeatherPalette.textPrimary,
                   ),
-                  if (isOffline) ...<Widget>[
-                    const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 5,
-                        vertical: 1,
-                      ),
-                      decoration: BoxDecoration(
-                        color: WeatherPalette.horizonAmber
-                            .withValues(alpha: 0.15),
-                        borderRadius:
-                            BorderRadius.circular(WeatherRadii.pill),
-                        border: Border.all(
-                          color: WeatherPalette.horizonAmber
-                              .withValues(alpha: 0.35),
+                  ),
+                ),
+                Row(
+                  children: <Widget>[
+                    Flexible(
+                      child: Text(
+                        dateSubtitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: WeatherType.label.copyWith(
+                          fontSize: 11,
+                          color: WeatherPalette.textSecondary,
                         ),
                       ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: <Widget>[
-                          Icon(
-                            WeatherPlatformIcons.cached(context),
-                            size: 10,
-                            color: WeatherPalette.horizonAmber,
+                    ),
+                    if (isOffline) ...<Widget>[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 5,
+                          vertical: 1,
+                        ),
+                        decoration: BoxDecoration(
+                          color: WeatherPalette.horizonAmber.withValues(
+                            alpha: 0.15,
                           ),
-                          const SizedBox(width: 3),
-                          Text(
-                            'CACHED',
-                            style: WeatherType.label.copyWith(
-                              fontSize: 9,
-                              fontWeight: FontWeight.w700,
-                              color: WeatherPalette.horizonAmber,
+                          borderRadius: BorderRadius.circular(
+                            WeatherRadii.pill,
+                          ),
+                          border: Border.all(
+                            color: WeatherPalette.horizonAmber.withValues(
+                              alpha: 0.35,
                             ),
                           ),
-                        ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: <Widget>[
+                            Icon(
+                              WeatherPlatformIcons.cached(context),
+                              size: 10,
+                              color: WeatherPalette.horizonAmber,
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              'CACHED',
+                              style: WeatherType.label.copyWith(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w700,
+                                color: WeatherPalette.horizonAmber,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
+                    ],
                   ],
-                ],
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
-          const Spacer(),
           IconButton(
             icon: Icon(
               WeatherPlatformIcons.settings(context),

@@ -10,9 +10,10 @@ import '../../../core/platform_ui/weather_platform_icons.dart';
 import '../services/support_entitlement_service.dart';
 
 class WeatherSettingsModal extends StatefulWidget {
-  const WeatherSettingsModal({required this.onRefresh, super.key});
+  const WeatherSettingsModal({required this.onRefresh, this.onChangeLocation, super.key});
 
   final VoidCallback onRefresh;
+  final VoidCallback? onChangeLocation;
 
   @override
   State<WeatherSettingsModal> createState() => _WeatherSettingsModalState();
@@ -70,7 +71,7 @@ class _WeatherSettingsModalState extends State<WeatherSettingsModal> {
       ),
       child: SafeArea(
         top: false,
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(
             horizontal: WeatherSpacing.space5,
             vertical: WeatherSpacing.space4,
@@ -96,51 +97,59 @@ class _WeatherSettingsModalState extends State<WeatherSettingsModal> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: <Widget>[
-                  Row(
-                    children: <Widget>[
-                      Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          color: WeatherPalette.mistBlue.withValues(
-                            alpha: 0.15,
-                          ),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
+                  Expanded(
+                    child: Row(
+                      children: <Widget>[
+                        Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
                             color: WeatherPalette.mistBlue.withValues(
-                              alpha: 0.4,
+                              alpha: 0.15,
+                            ),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: WeatherPalette.mistBlue.withValues(
+                                alpha: 0.4,
+                              ),
+                            ),
+                          ),
+                          child: Center(
+                            child: Icon(
+                              WeatherPlatformIcons.settings(context),
+                              size: 18,
+                              color: WeatherPalette.mistBlue,
                             ),
                           ),
                         ),
-                        child: Center(
-                          child: Icon(
-                            WeatherPlatformIcons.settings(context),
-                            size: 18,
-                            color: WeatherPalette.mistBlue,
+                        const SizedBox(width: WeatherSpacing.space2),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              Text(
+                                'STATION INTELLIGENCE',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: WeatherType.title.copyWith(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              Text(
+                                'WeatherOS • OnlyTruePerspective LLC',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: WeatherType.label.copyWith(
+                                  fontSize: 11,
+                                  color: WeatherPalette.textSecondary,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ),
-                      const SizedBox(width: WeatherSpacing.space2),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          Text(
-                            'STATION INTELLIGENCE',
-                            style: WeatherType.title.copyWith(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                          Text(
-                            'WeatherOS • OnlyTruePerspective LLC',
-                            style: WeatherType.label.copyWith(
-                              fontSize: 11,
-                              color: WeatherPalette.textSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                   IconButton(
                     icon: Icon(WeatherPlatformIcons.close(context), size: 20),
@@ -300,6 +309,16 @@ class _WeatherSettingsModalState extends State<WeatherSettingsModal> {
                 },
               ),
               const SizedBox(height: WeatherSpacing.space3),
+
+              if (widget.onChangeLocation != null) ...<Widget>[
+                WeatherPlatformButton(
+                  icon: Icon(WeatherPlatformIcons.location(context)),
+                  variant: WeatherButtonVariant.secondary,
+                  onPressed: widget.onChangeLocation,
+                  child: const Text('Change Location / ZIP Code'),
+                ),
+                const SizedBox(height: WeatherSpacing.space2),
+              ],
 
               // Action Buttons (Refresh Telemetry)
               WeatherPlatformButton(

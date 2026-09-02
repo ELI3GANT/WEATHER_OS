@@ -15,6 +15,7 @@ import '../models/weather_condition.dart';
 import '../models/weather_model.dart';
 import '../providers/weather_provider.dart';
 import '../providers/weather_scope.dart';
+import '../services/location_search_service.dart';
 import '../widgets/current_conditions_hero.dart';
 import '../widgets/daily_forecast_view.dart';
 import '../widgets/hourly_forecast_rail.dart';
@@ -117,8 +118,42 @@ class _WeatherHomeScreenState extends State<WeatherHomeScreen> {
       title: 'Station Intelligence & Settings',
       builder: (BuildContext ctx) => WeatherSettingsModal(
         onRefresh: () => WeatherScope.read(context).refresh(),
+        onChangeLocation: _openLocationChooser,
       ),
     );
+  }
+
+  Future<void> _openLocationChooser() async {
+    final controller = TextEditingController();
+    final query = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Change weather location'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          textInputAction: TextInputAction.search,
+          onSubmitted: (_) => Navigator.of(dialogContext).pop(controller.text),
+          decoration: const InputDecoration(
+            hintText: 'ZIP code, city, or state',
+            prefixIcon: Icon(Icons.location_on_outlined),
+          ),
+        ),
+        actions: <Widget>[
+          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, controller.text), child: const Text('Use location')),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (!mounted || query == null || query.trim().isEmpty) return;
+    final result = await const LocationSearchService().search(query);
+    if (!mounted) return;
+    if (result == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Location not found. Try a ZIP code or city.')));
+      return;
+    }
+    await WeatherScope.read(context).setLocation(result);
   }
 
   int? _parseHourFromLabel(String label) {
@@ -215,6 +250,7 @@ class _WeatherHomeScreenState extends State<WeatherHomeScreen> {
                             dateSubtitle: _formatTodayHeaderDate(),
                             isOffline: provider.isOffline,
                             onSettingsPressed: _openSettingsModal,
+                            onLocationPressed: _openLocationChooser,
                           ),
 
                         // Main Tab Content

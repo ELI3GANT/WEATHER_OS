@@ -125,4 +125,10 @@ class WeatherProvider extends ChangeNotifier {
     longitude: _longitude,
     locationName: _locationName,
   );
+
+  Future<void> setLocation(LocationResult location) => load(
+    latitude: location.latitude,
+    longitude: location.longitude,
+    locationName: location.locationName,
+  );
 }
