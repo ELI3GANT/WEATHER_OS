@@ -159,6 +159,7 @@ class WeatherPlatformHeader extends StatelessWidget {
                   ),
                   ),
                 ),
+                ),
                 Row(
                   children: <Widget>[
                     Flexible(
