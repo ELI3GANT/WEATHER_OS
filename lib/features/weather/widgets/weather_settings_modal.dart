@@ -313,7 +313,7 @@ class _WeatherSettingsModalState extends State<WeatherSettingsModal> {
               if (widget.onChangeLocation != null) ...<Widget>[
                 WeatherPlatformButton(
                   icon: Icon(WeatherPlatformIcons.location(context)),
-                  variant: WeatherButtonVariant.secondary,
+                  variant: WeatherButtonVariant.outlined,
                   onPressed: widget.onChangeLocation,
                   child: const Text('Change Location / ZIP Code'),
                 ),
