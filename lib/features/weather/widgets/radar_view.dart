@@ -11,9 +11,12 @@ import '../../../core/platform_ui/weather_platform_card.dart';
 import '../../../core/platform_ui/weather_platform_feedback.dart';
 import '../../../core/platform_ui/weather_platform_icons.dart';
 import '../../../core/platform_ui/weather_platform_segmented_control.dart';
+import '../models/hourly_forecast.dart';
 
 class RadarView extends StatefulWidget {
-  const RadarView({super.key});
+  const RadarView({required this.hourly, super.key});
+
+  final List<HourlyForecast> hourly;
 
   @override
   State<RadarView> createState() => _RadarViewState();
@@ -191,6 +194,7 @@ class _RadarViewState extends State<RadarView>
                           zoomLevel: _selectedRangeIndex == 0
                               ? 1.3
                               : (_selectedRangeIndex == 1 ? 1.0 : 0.75),
+                          precipitation: widget.hourly,
                         ),
                       );
                     },
@@ -346,10 +350,11 @@ class _RadarLegendItem extends StatelessWidget {
 }
 
 class _RadarCanvasPainter extends CustomPainter {
-  const _RadarCanvasPainter({required this.sweepAngle, this.zoomLevel = 1.0});
+  const _RadarCanvasPainter({required this.sweepAngle, required this.precipitation, this.zoomLevel = 1.0});
 
   final double sweepAngle;
   final double zoomLevel;
+  final List<HourlyForecast> precipitation;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -378,9 +383,8 @@ class _RadarCanvasPainter extends CustomPainter {
       ringPaint,
     );
 
-    // Synthetic precipitation cells deliberately drift and pulse with each
-    // sweep. This keeps the local radar visualization alive without implying
-    // that it has a live radar-feed backend.
+    // Render only precipitation probabilities returned by the live forecast
+    // service. This is a forecast overlay, never invented radar reflectivity.
     final phase = sweepAngle;
     _drawCell(
       canvas,
