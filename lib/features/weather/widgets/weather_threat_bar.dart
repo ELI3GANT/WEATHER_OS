@@ -11,30 +11,23 @@ class WeatherThreatBar extends StatelessWidget {
 
   final List<HourlyForecast> forecasts;
 
-  Color _threatColor(String threat) {
-    return switch (threat.toLowerCase()) {
-      'high' => const Color(0xFFFF5252),
-      'moderate' => const Color(0xFFFFB300),
-      _ => const Color(0xFF69F0AE),
-    };
-  }
-
   @override
   Widget build(BuildContext context) {
     if (forecasts.isEmpty) {
       return const SizedBox.shrink();
     }
 
-    // Segment forecasts into threat zones
-    final segments = <_ThreatSegment>[];
-    for (final f in forecasts) {
-      final color = _threatColor(f.threatLevel);
-      final label = f.threatLevel.toUpperCase();
-      if (segments.isNotEmpty && segments.last.threat == label) {
-        segments.last.count++;
-      } else {
-        segments.add(_ThreatSegment(threat: label, color: color, count: 1));
-      }
+    Color forecastColor(HourlyForecast forecast) {
+      final probability = forecast.precipChance;
+      if (probability >= 70) return const Color(0xFFFF5252);
+      if (probability >= 40) return const Color(0xFFFFB300);
+      return switch (forecast.condition.name) {
+        'clear' => const Color(0xFFFFC857),
+        'snow' => const Color(0xFFB8D9FF),
+        'storm' => const Color(0xFFE040FB),
+        'rain' => const Color(0xFF38BDF8),
+        _ => const Color(0xFF69F0AE),
+      };
     }
 
     return Column(
@@ -45,13 +38,12 @@ class WeatherThreatBar extends StatelessWidget {
           child: SizedBox(
             height: 4,
             child: Row(
-              children: segments.map((_ThreatSegment s) {
+              children: forecasts.map((forecast) {
                 return Expanded(
-                  flex: s.count,
                   child: Container(
                     margin: const EdgeInsets.symmetric(horizontal: 1),
                     decoration: BoxDecoration(
-                      color: s.color,
+                      color: forecastColor(forecast),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -61,38 +53,14 @@ class WeatherThreatBar extends StatelessWidget {
           ),
         ),
         const SizedBox(height: WeatherSpacing.space2),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: segments.map((_ThreatSegment s) {
-            return Flexible(
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  s.threat,
-                  style: WeatherType.overline.copyWith(
-                    color: s.color,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1.1,
-                  ),
-                ),
-              ),
-            );
-          }).toList(growable: false),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: Text(
+            'PRECIPITATION / CONDITION INTENSITY',
+            style: WeatherType.overline.copyWith(fontSize: 9, color: WeatherPalette.textTertiary),
+          ),
         ),
       ],
     );
   }
-}
-
-class _ThreatSegment {
-  _ThreatSegment({
-    required this.threat,
-    required this.color,
-    required this.count,
-  });
-
-  final String threat;
-  final Color color;
-  int count;
 }
