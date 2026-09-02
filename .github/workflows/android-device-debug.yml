@@ -50,12 +50,12 @@ jobs:
           echo "$RUNNER_TEMP/flutter/bin" >> "$GITHUB_PATH"
 
       - name: Build debug APK
-        run: flutter build apk --debug
+        run: flutter build apk --debug --split-per-abi
 
       - name: Retain debug APK
         uses: actions/upload-artifact@v4
         with:
           name: weatheros-device-debug-${{ github.run_number }}
-          path: build/app/outputs/flutter-apk/app-debug.apk
+          path: build/app/outputs/flutter-apk/app-arm64-v8a-debug.apk
           if-no-files-found: error
           retention-days: 7
