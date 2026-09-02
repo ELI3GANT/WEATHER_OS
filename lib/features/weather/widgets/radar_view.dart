@@ -282,8 +282,13 @@ class _RadarViewState extends State<RadarView>
                             );
                           }
                           return Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: controls,
+                            children: <Widget>[
+                              // The segmented control has a larger intrinsic
+                              // width on Android; constrain it so the pause
+                              // button never overflows narrow phone cards.
+                              Expanded(child: controls[0]),
+                              controls[1],
+                            ],
                           );
                         },
                   ),
