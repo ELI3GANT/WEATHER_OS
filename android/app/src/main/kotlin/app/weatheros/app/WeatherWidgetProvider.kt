@@ -5,10 +5,22 @@ import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
 import android.content.Context
 import android.content.Intent
+import android.content.ComponentName
 import android.widget.RemoteViews
 import org.json.JSONObject
 
 class WeatherWidgetProvider : AppWidgetProvider() {
+
+    companion object {
+        fun updateAllWidgets(context: Context) {
+            val manager = AppWidgetManager.getInstance(context)
+            val component = ComponentName(context, WeatherWidgetProvider::class.java)
+            val ids = manager.getAppWidgetIds(component)
+            if (ids.isNotEmpty()) {
+                WeatherWidgetProvider().onUpdate(context, manager, ids)
+            }
+        }
+    }
 
     override fun onUpdate(
         context: Context,
@@ -27,6 +39,13 @@ class WeatherWidgetProvider : AppWidgetProvider() {
     ) {
         val views = RemoteViews(context.packageName, R.layout.weather_widget_layout)
 
+        views.setTextViewText(R.id.widget_location, "WeatherOS")
+        views.setTextViewText(R.id.widget_glyph, "◌")
+        views.setTextViewText(R.id.widget_temperature, "—")
+        views.setTextViewText(R.id.widget_condition, "Waiting for weather sync")
+        views.setTextViewText(R.id.widget_high_low, "Open WeatherOS to sync")
+        views.setTextViewText(R.id.widget_updated, "Waiting for first sync")
+
         // Read cached weather from Flutter shared preferences
         try {
             val prefs = context.getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
@@ -41,12 +60,26 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                 val low = json.optDouble("low", 62.0).toInt()
 
                 views.setTextViewText(R.id.widget_location, location)
+                views.setTextViewText(R.id.widget_glyph, weatherGlyph(condition))
                 views.setTextViewText(R.id.widget_temperature, "$temp°")
                 views.setTextViewText(R.id.widget_condition, "$condition • Feels like $feelsLike°")
                 views.setTextViewText(R.id.widget_high_low, "H $high°   L $low°")
+                val updatedAt = json.optLong("timestamp", 0L)
+                val ageMinutes = if (updatedAt > 0L) {
+                    ((System.currentTimeMillis() - updatedAt).coerceAtLeast(0L) / 60_000L)
+                } else -1L
+                views.setTextViewText(
+                    R.id.widget_updated,
+                    when {
+                        ageMinutes < 0L -> "Waiting for first sync"
+                        ageMinutes == 0L -> "Updated just now"
+                        else -> "Updated ${ageMinutes}m ago"
+                    }
+                )
             }
         } catch (_: Exception) {
-            // Graceful fallback to default layout strings
+            views.setTextViewText(R.id.widget_condition, "Weather sync unavailable")
+            views.setTextViewText(R.id.widget_updated, "Open WeatherOS to retry")
         }
 
         // Click to launch main app
@@ -61,5 +94,19 @@ class WeatherWidgetProvider : AppWidgetProvider() {
 
         // Update widget
         appWidgetManager.updateAppWidget(appWidgetId, views)
+    }
+
+    private fun weatherGlyph(condition: String): String {
+        val value = condition.lowercase()
+        return when {
+            value.contains("storm") || value.contains("thunder") -> "ϟ"
+            value.contains("snow") || value.contains("sleet") -> "❄"
+            value.contains("rain") || value.contains("drizzle") -> "☂"
+            value.contains("fog") || value.contains("mist") || value.contains("haze") -> "≋"
+            value.contains("partly") -> "◐"
+            value.contains("cloud") || value.contains("overcast") -> "☁"
+            value.contains("clear") || value.contains("sun") -> "☀"
+            else -> "◌"
+        }
     }
 }

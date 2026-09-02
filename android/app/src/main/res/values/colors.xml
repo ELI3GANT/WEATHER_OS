@@ -5,5 +5,6 @@
     <color name="widgetBorder">#2E3E56</color>
     <color name="widgetTextPrimary">#F0F4F8</color>
     <color name="widgetTextSecondary">#8CA0BA</color>
+    <color name="widgetTextMuted">#6E8098</color>
     <color name="widgetAccent">#38BDF8</color>
 </resources>
