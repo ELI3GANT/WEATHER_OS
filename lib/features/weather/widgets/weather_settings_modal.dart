@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../../app/theme/weather_tokens.dart';
@@ -5,14 +7,53 @@ import '../../../core/platform_ui/weather_platform_button.dart';
 import '../../../core/platform_ui/weather_platform_card.dart';
 import '../../../core/platform_ui/weather_platform_feedback.dart';
 import '../../../core/platform_ui/weather_platform_icons.dart';
+import '../services/support_entitlement_service.dart';
 
-class WeatherSettingsModal extends StatelessWidget {
-  const WeatherSettingsModal({
-    required this.onRefresh,
-    super.key,
-  });
+class WeatherSettingsModal extends StatefulWidget {
+  const WeatherSettingsModal({required this.onRefresh, super.key});
 
   final VoidCallback onRefresh;
+
+  @override
+  State<WeatherSettingsModal> createState() => _WeatherSettingsModalState();
+}
+
+class _WeatherSettingsModalState extends State<WeatherSettingsModal> {
+  final SupportEntitlementService _support = SupportEntitlementService.instance;
+  StreamSubscription<SupportPurchaseNotice>? _noticeSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _noticeSubscription = _support.notices.listen(_showPurchaseNotice);
+    unawaited(_support.initialize());
+  }
+
+  @override
+  void dispose() {
+    _noticeSubscription?.cancel();
+    super.dispose();
+  }
+
+  void _showPurchaseNotice(SupportPurchaseNotice notice) {
+    if (!mounted || notice.type == SupportPurchaseNoticeType.canceled) return;
+    final message = switch (notice.type) {
+      SupportPurchaseNoticeType.purchased =>
+        '${notice.tier.emoji} ${notice.tier.label} unlocked permanently. Thank you!',
+      SupportPurchaseNoticeType.tipped =>
+        '${notice.tier.emoji} Extra support received. You are amazing!',
+      SupportPurchaseNoticeType.restored =>
+        '${notice.tier.label} ownership restored.',
+      SupportPurchaseNoticeType.pending =>
+        'Google Play is processing your purchase.',
+      SupportPurchaseNoticeType.error =>
+        notice.message ?? 'The purchase could not be completed.',
+      SupportPurchaseNoticeType.canceled => '',
+    };
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -61,10 +102,14 @@ class WeatherSettingsModal extends StatelessWidget {
                         width: 32,
                         height: 32,
                         decoration: BoxDecoration(
-                          color: WeatherPalette.mistBlue.withValues(alpha: 0.15),
+                          color: WeatherPalette.mistBlue.withValues(
+                            alpha: 0.15,
+                          ),
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
-                            color: WeatherPalette.mistBlue.withValues(alpha: 0.4),
+                            color: WeatherPalette.mistBlue.withValues(
+                              alpha: 0.4,
+                            ),
                           ),
                         ),
                         child: Center(
@@ -145,86 +190,114 @@ class WeatherSettingsModal extends StatelessWidget {
               ),
               const SizedBox(height: WeatherSpacing.space3),
 
-              // Optional Creator Tip Jar Section
-              WeatherPlatformCard(
-                padding: const EdgeInsets.all(WeatherSpacing.space3),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              AnimatedBuilder(
+                animation: _support,
+                builder: (BuildContext context, Widget? child) {
+                  return WeatherPlatformCard(
+                    padding: const EdgeInsets.all(WeatherSpacing.space3),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
-                        Text(
-                          'SUPPORT INDEPENDENT DEVELOPMENT',
-                          style: WeatherType.overline.copyWith(fontSize: 9),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: <Widget>[
+                            Text(
+                              'PERMANENT SUPPORT UNLOCKS',
+                              style: WeatherType.overline.copyWith(fontSize: 9),
+                            ),
+                            Text(
+                              'NO SUBSCRIPTION',
+                              style: WeatherType.label.copyWith(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w700,
+                                color: WeatherPalette.horizonAmber,
+                              ),
+                            ),
+                          ],
                         ),
+                        const SizedBox(height: WeatherSpacing.space1),
                         Text(
-                          'OPTIONAL',
-                          style: WeatherType.label.copyWith(
-                            fontSize: 9,
-                            fontWeight: FontWeight.w700,
-                            color: WeatherPalette.horizonAmber,
+                          _support.entitlement == WeatherSupportTier.none
+                              ? 'One payment. Yours forever. Higher tiers include every lower-tier unlock.'
+                              : '${_support.entitlement.emoji} ${_support.entitlement.label} is active on this Google Play account.',
+                          style: WeatherType.body.copyWith(
+                            fontSize: 10,
+                            color: WeatherPalette.textSecondary,
+                            height: 1.3,
                           ),
                         ),
+                        const SizedBox(height: WeatherSpacing.space3),
+                        for (final tier in WeatherSupportTier.values.skip(
+                          1,
+                        )) ...<Widget>[
+                          _SupportUnlockButton(
+                            tier: tier,
+                            price: _support.priceFor(tier),
+                            isOwned: _support.owns(tier),
+                            isBusy:
+                                _support.isBusy &&
+                                _support.productFor(tier)?.id != null,
+                            canPurchase: _support.canPurchase(tier),
+                            isAndroidStorefront: _support.isAndroidStorefront,
+                            onTap: () {
+                              WeatherPlatformFeedback.selection(context);
+                              unawaited(_support.purchase(tier));
+                            },
+                          ),
+                          if (tier != WeatherSupportTier.patron)
+                            const SizedBox(height: WeatherSpacing.space2),
+                        ],
+                        if (_support.entitlement !=
+                            WeatherSupportTier.none) ...<Widget>[
+                          const SizedBox(height: WeatherSpacing.space3),
+                          Text(
+                            'OPTIONAL REPEATABLE TIP',
+                            style: WeatherType.overline.copyWith(fontSize: 9),
+                          ),
+                          const SizedBox(height: WeatherSpacing.space2),
+                          Row(
+                            children: <Widget>[
+                              for (final tier in WeatherSupportTier.values.skip(
+                                1,
+                              )) ...<Widget>[
+                                Expanded(
+                                  child: _RepeatTipButton(
+                                    tier: tier,
+                                    price: _support.tipPriceFor(tier),
+                                    enabled: _support.canTip(tier),
+                                    onTap: () {
+                                      WeatherPlatformFeedback.selection(
+                                        context,
+                                      );
+                                      unawaited(
+                                        _support.purchase(
+                                          tier,
+                                          repeatTip: true,
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                                if (tier != WeatherSupportTier.patron)
+                                  const SizedBox(width: WeatherSpacing.space2),
+                              ],
+                            ],
+                          ),
+                        ],
+                        if (_support.errorMessage != null) ...<Widget>[
+                          const SizedBox(height: WeatherSpacing.space2),
+                          Text(
+                            _support.errorMessage!,
+                            style: WeatherType.label.copyWith(
+                              fontSize: 9,
+                              color: WeatherPalette.textTertiary,
+                            ),
+                          ),
+                        ],
                       ],
                     ),
-                    const SizedBox(height: WeatherSpacing.space2),
-                    Row(
-                      children: <Widget>[
-                        Expanded(
-                          child: _TipJarButton(
-                            emoji: '☕',
-                            title: 'Coffee',
-                            amount: '\$1.99',
-                            onTap: () {
-                              WeatherPlatformFeedback.selection(context);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Thank you for supporting independent software! ☕✨'),
-                                  behavior: SnackBarBehavior.floating,
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: WeatherSpacing.space2),
-                        Expanded(
-                          child: _TipJarButton(
-                            emoji: '⚡',
-                            title: 'Supercharge',
-                            amount: '\$4.99',
-                            onTap: () {
-                              WeatherPlatformFeedback.selection(context);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Supercharge support received! You rock! ⚡🚀'),
-                                  behavior: SnackBarBehavior.floating,
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: WeatherSpacing.space2),
-                        Expanded(
-                          child: _TipJarButton(
-                            emoji: '👑',
-                            title: 'Patron',
-                            amount: '\$9.99',
-                            onTap: () {
-                              WeatherPlatformFeedback.selection(context);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('OTP Founding Patron status acknowledged! 👑💎'),
-                                  behavior: SnackBarBehavior.floating,
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+                  );
+                },
               ),
               const SizedBox(height: WeatherSpacing.space3),
 
@@ -234,7 +307,7 @@ class WeatherSettingsModal extends StatelessWidget {
                 variant: WeatherButtonVariant.primary,
                 onPressed: () {
                   Navigator.of(context).pop();
-                  onRefresh();
+                  widget.onRefresh();
                 },
                 child: const Text('Sync Telemetry'),
               ),
@@ -243,7 +316,7 @@ class WeatherSettingsModal extends StatelessWidget {
               // Version info footer
               Center(
                 child: Text(
-                  'WeatherOS v1.0.4 • Build 18 • OnlyTruePerspective LLC',
+                  'WeatherOS v1.0.5 • Build 19 • OnlyTruePerspective LLC',
                   style: WeatherType.label.copyWith(
                     fontSize: 10,
                     color: WeatherPalette.textTertiary,
@@ -258,26 +331,32 @@ class WeatherSettingsModal extends StatelessWidget {
   }
 }
 
-class _TipJarButton extends StatelessWidget {
-  const _TipJarButton({
-    required this.emoji,
-    required this.title,
-    required this.amount,
+class _SupportUnlockButton extends StatelessWidget {
+  const _SupportUnlockButton({
+    required this.tier,
+    required this.price,
+    required this.isOwned,
+    required this.isBusy,
+    required this.canPurchase,
+    required this.isAndroidStorefront,
     required this.onTap,
   });
 
-  final String emoji;
-  final String title;
-  final String amount;
+  final WeatherSupportTier tier;
+  final String price;
+  final bool isOwned;
+  final bool isBusy;
+  final bool canPurchase;
+  final bool isAndroidStorefront;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: onTap,
+      onTap: canPurchase ? onTap : null,
       borderRadius: BorderRadius.circular(WeatherRadii.control),
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
         decoration: BoxDecoration(
           color: WeatherPalette.lensLift.withValues(alpha: 0.3),
           borderRadius: BorderRadius.circular(WeatherRadii.control),
@@ -285,22 +364,91 @@ class _TipJarButton extends StatelessWidget {
             color: WeatherPalette.lensRim.withValues(alpha: 0.2),
           ),
         ),
-        child: Column(
+        child: Row(
           children: <Widget>[
-            Text(emoji, style: const TextStyle(fontSize: 16)),
-            const SizedBox(height: 2),
-            Text(
-              title,
-              style: WeatherType.label.copyWith(
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
+            Text(tier.emoji, style: const TextStyle(fontSize: 20)),
+            const SizedBox(width: WeatherSpacing.space2),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    tier.label,
+                    style: WeatherType.label.copyWith(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    tier.unlockSummary,
+                    style: WeatherType.body.copyWith(
+                      fontSize: 9,
+                      color: WeatherPalette.textSecondary,
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 1),
+            const SizedBox(width: WeatherSpacing.space2),
             Text(
-              amount,
+              isOwned
+                  ? 'UNLOCKED'
+                  : isBusy
+                  ? 'WAITING'
+                  : isAndroidStorefront
+                  ? price
+                  : 'ANDROID',
               style: WeatherType.label.copyWith(
-                fontSize: 11,
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
+                color: isOwned
+                    ? const Color(0xFF69F0AE)
+                    : WeatherPalette.horizonAmber,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _RepeatTipButton extends StatelessWidget {
+  const _RepeatTipButton({
+    required this.tier,
+    required this.price,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  final WeatherSupportTier tier;
+  final String price;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: enabled ? onTap : null,
+      borderRadius: BorderRadius.circular(WeatherRadii.control),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+        decoration: BoxDecoration(
+          color: WeatherPalette.lensLift.withValues(alpha: 0.22),
+          borderRadius: BorderRadius.circular(WeatherRadii.control),
+          border: Border.all(
+            color: WeatherPalette.lensRim.withValues(alpha: 0.16),
+          ),
+        ),
+        child: Column(
+          children: <Widget>[
+            Text(tier.emoji, style: const TextStyle(fontSize: 15)),
+            const SizedBox(height: 2),
+            Text(
+              price,
+              style: WeatherType.label.copyWith(
+                fontSize: 10,
                 fontWeight: FontWeight.w800,
                 color: WeatherPalette.horizonAmber,
               ),
