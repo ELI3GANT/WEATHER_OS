@@ -1,0 +1,61 @@
+name: Android Device Debug APK
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  FLUTTER_VERSION: 3.47.2
+  JAVA_VERSION: 17
+  ANDROID_API_LEVEL: 36
+  ANDROID_BUILD_TOOLS: 36.0.0
+
+jobs:
+  build-debug-apk:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v5
+
+      - name: Configure Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: gradle
+
+      - name: Install Android API 36
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdkmanager_path="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager -print -quit)"
+          set +o pipefail
+          yes | "$sdkmanager_path" --licenses >/dev/null
+          set -o pipefail
+          "$sdkmanager_path" \
+            "platforms;android-${ANDROID_API_LEVEL}" \
+            "build-tools;${ANDROID_BUILD_TOOLS}"
+
+      - name: Install official Flutter SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/flutter.tar.xz"
+          curl --fail --location --retry 3 --output "$archive" \
+            "https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_${FLUTTER_VERSION}-stable.tar.xz"
+          tar -xf "$archive" -C "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/flutter/bin" >> "$GITHUB_PATH"
+
+      - name: Build debug APK
+        run: flutter build apk --debug
+
+      - name: Retain debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: weatheros-device-debug-${{ github.run_number }}
+          path: build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+          retention-days: 7
