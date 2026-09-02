@@ -37,7 +37,9 @@ class _RadarViewState extends State<RadarView>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _rangeSub = WeatherNativeUIBridge.instance.onRadarRangeChanged.listen((int index) {
+    _rangeSub = WeatherNativeUIBridge.instance.onRadarRangeChanged.listen((
+      int index,
+    ) {
       if (index >= 0 && index < _ranges.length) {
         setState(() {
           _selectedRangeIndex = index;
@@ -80,7 +82,9 @@ class _RadarViewState extends State<RadarView>
         state == AppLifecycleState.inactive ||
         state == AppLifecycleState.detached) {
       _sweepController.stop();
-    } else if (state == AppLifecycleState.resumed && _isPlaying) {
+    } else if (state == AppLifecycleState.resumed &&
+        _isPlaying &&
+        !_reduceMotion) {
       if (!_sweepController.isAnimating) {
         _sweepController.repeat();
       }
@@ -99,7 +103,7 @@ class _RadarViewState extends State<RadarView>
   void _togglePlay() {
     setState(() {
       _isPlaying = !_isPlaying;
-      if (_isPlaying) {
+      if (_isPlaying && !_reduceMotion) {
         _sweepController.repeat();
       } else {
         _sweepController.stop();
@@ -108,10 +112,14 @@ class _RadarViewState extends State<RadarView>
     _syncBridgeState();
   }
 
+  bool get _reduceMotion =>
+      MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+
   @override
   Widget build(BuildContext context) {
     final isIOS = WeatherPlatform.isIOS(context);
-    final isNativeActive = isIOS && WeatherNativeUIBridge.instance.isNativeBridgeAvailable;
+    final isNativeActive =
+        isIOS && WeatherNativeUIBridge.instance.isNativeBridgeAvailable;
 
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
@@ -122,7 +130,14 @@ class _RadarViewState extends State<RadarView>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: <Widget>[
-              Text('DOPPLER RADAR TELEMETRY', style: WeatherType.overline),
+              Expanded(
+                child: Text(
+                  'DOPPLER RADAR TELEMETRY',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: WeatherType.overline,
+                ),
+              ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
@@ -146,7 +161,7 @@ class _RadarViewState extends State<RadarView>
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      'LIVE HD',
+                      'LIVE SWEEP',
                       style: WeatherType.label.copyWith(
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
@@ -185,50 +200,92 @@ class _RadarViewState extends State<RadarView>
                   const SizedBox(height: WeatherSpacing.space3),
 
                   // Platform-Adaptive Interactive Controls (Only in Flutter when not native-bridged)
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: <Widget>[
-                      // Range Selector
-                      WeatherPlatformSegmentedControl<int>(
-                        groupValue: _selectedRangeIndex,
-                        onValueChanged: (int val) {
-                          setState(() {
-                            _selectedRangeIndex = val;
-                          });
-                          _syncBridgeState();
-                        },
-                        children: const <int, Widget>{
-                          0: Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            child: Text('50 mi', style: TextStyle(fontSize: 11)),
-                          ),
-                          1: Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            child: Text('100 mi', style: TextStyle(fontSize: 11)),
-                          ),
-                          2: Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            child: Text('250 mi', style: TextStyle(fontSize: 11)),
-                          ),
-                        },
-                      ),
+                  LayoutBuilder(
+                    builder:
+                        (BuildContext context, BoxConstraints constraints) {
+                          final compact = constraints.maxWidth < 300;
+                          final controls = <Widget>[
+                            // Range Selector
+                            WeatherPlatformSegmentedControl<int>(
+                              groupValue: _selectedRangeIndex,
+                              onValueChanged: (int val) {
+                                setState(() {
+                                  _selectedRangeIndex = val;
+                                });
+                                _syncBridgeState();
+                              },
+                              children: const <int, Widget>{
+                                0: Padding(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
+                                  child: Text(
+                                    '50 mi',
+                                    style: TextStyle(fontSize: 11),
+                                  ),
+                                ),
+                                1: Padding(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
+                                  child: Text(
+                                    '100 mi',
+                                    style: TextStyle(fontSize: 11),
+                                  ),
+                                ),
+                                2: Padding(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
+                                  child: Text(
+                                    '250 mi',
+                                    style: TextStyle(fontSize: 11),
+                                  ),
+                                ),
+                              },
+                            ),
 
-                      // Play/Pause button
-                      IconButton(
-                        icon: Icon(
-                          _isPlaying
-                              ? WeatherPlatformIcons.pause(context)
-                              : WeatherPlatformIcons.play(context),
-                          color: WeatherPalette.mistBlue,
-                          size: 26,
-                        ),
-                        onPressed: () {
-                          WeatherPlatformFeedback.light(context);
-                          _togglePlay();
+                            // Play/Pause button
+                            IconButton(
+                              icon: Icon(
+                                _isPlaying
+                                    ? WeatherPlatformIcons.pause(context)
+                                    : WeatherPlatformIcons.play(context),
+                                color: WeatherPalette.mistBlue,
+                                size: 26,
+                              ),
+                              onPressed: () {
+                                WeatherPlatformFeedback.light(context);
+                                _togglePlay();
+                              },
+                              tooltip: _isPlaying
+                                  ? 'Pause Radar Sweep'
+                                  : 'Resume Radar Sweep',
+                            ),
+                          ];
+                          if (compact) {
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: <Widget>[
+                                Align(
+                                  alignment: Alignment.center,
+                                  child: controls[0],
+                                ),
+                                Align(
+                                  alignment: Alignment.centerRight,
+                                  child: controls[1],
+                                ),
+                              ],
+                            );
+                          }
+                          return Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: controls,
+                          );
                         },
-                        tooltip: _isPlaying ? 'Pause Radar Sweep' : 'Resume Radar Sweep',
-                      ),
-                    ],
                   ),
                 ],
               ],
@@ -239,13 +296,18 @@ class _RadarViewState extends State<RadarView>
           // Intensity Legend
           WeatherPlatformCard(
             padding: const EdgeInsets.all(WeatherSpacing.space4),
-            child: const Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
+            child: const Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 12,
+              runSpacing: 8,
               children: <Widget>[
                 _RadarLegendItem(color: Color(0xFF69F0AE), label: 'Light'),
                 _RadarLegendItem(color: Color(0xFFFFB300), label: 'Moderate'),
                 _RadarLegendItem(color: Color(0xFFFF5252), label: 'Heavy'),
-                _RadarLegendItem(color: Color(0xFFE040FB), label: 'Extreme / Hail'),
+                _RadarLegendItem(
+                  color: Color(0xFFE040FB),
+                  label: 'Extreme / Hail',
+                ),
               ],
             ),
           ),
@@ -279,10 +341,7 @@ class _RadarLegendItem extends StatelessWidget {
 }
 
 class _RadarCanvasPainter extends CustomPainter {
-  const _RadarCanvasPainter({
-    required this.sweepAngle,
-    this.zoomLevel = 1.0,
-  });
+  const _RadarCanvasPainter({required this.sweepAngle, this.zoomLevel = 1.0});
 
   final double sweepAngle;
   final double zoomLevel;
@@ -314,43 +373,56 @@ class _RadarCanvasPainter extends CustomPainter {
       ringPaint,
     );
 
-    // Synthetic Rain Cell Blobs scaled by zoom
-    final blob1Offset = Offset(30 * zoomLevel, -40 * zoomLevel);
-    final blob1Radius = 55 * zoomLevel;
-    final cellPaint = Paint()
-      ..shader = RadialGradient(
-        colors: <Color>[
-          const Color(0xFFFF5252).withValues(alpha: 0.8),
-          const Color(0xFFFFB300).withValues(alpha: 0.6),
-          const Color(0xFF69F0AE).withValues(alpha: 0.4),
-          Colors.transparent,
-        ],
-        stops: const <double>[0.0, 0.35, 0.7, 1.0],
-      ).createShader(
-        Rect.fromCircle(
-          center: center + blob1Offset,
-          radius: blob1Radius,
-        ),
-      );
-    canvas.drawCircle(center + blob1Offset, blob1Radius, cellPaint);
-
-    final blob2Offset = Offset(-45 * zoomLevel, 25 * zoomLevel);
-    final blob2Radius = 40 * zoomLevel;
-    final cellPaint2 = Paint()
-      ..shader = RadialGradient(
-        colors: <Color>[
-          const Color(0xFFFFB300).withValues(alpha: 0.7),
-          const Color(0xFF69F0AE).withValues(alpha: 0.4),
-          Colors.transparent,
-        ],
-        stops: const <double>[0.0, 0.45, 1.0],
-      ).createShader(
-        Rect.fromCircle(
-          center: center + blob2Offset,
-          radius: blob2Radius,
-        ),
-      );
-    canvas.drawCircle(center + blob2Offset, blob2Radius, cellPaint2);
+    // Synthetic precipitation cells deliberately drift and pulse with each
+    // sweep. This keeps the local radar visualization alive without implying
+    // that it has a live radar-feed backend.
+    final phase = sweepAngle;
+    _drawCell(
+      canvas,
+      center:
+          center +
+          Offset(
+            math.cos(phase * 0.82 + 0.8) * radius * 0.34,
+            math.sin(phase * 0.67 + 1.2) * radius * 0.30,
+          ),
+      radius: radius * (0.19 + 0.025 * math.sin(phase * 1.7)),
+      colors: <Color>[
+        const Color(0xFFFF5252).withValues(alpha: 0.82),
+        const Color(0xFFFFB300).withValues(alpha: 0.62),
+        const Color(0xFF69F0AE).withValues(alpha: 0.38),
+        Colors.transparent,
+      ],
+    );
+    _drawCell(
+      canvas,
+      center:
+          center +
+          Offset(
+            math.cos(phase * 0.55 + 3.4) * radius * 0.48,
+            math.sin(phase * 0.91 + 2.7) * radius * 0.38,
+          ),
+      radius: radius * (0.13 + 0.02 * math.cos(phase * 2.1)),
+      colors: <Color>[
+        const Color(0xFFFFB300).withValues(alpha: 0.78),
+        const Color(0xFF69F0AE).withValues(alpha: 0.42),
+        Colors.transparent,
+      ],
+    );
+    _drawCell(
+      canvas,
+      center:
+          center +
+          Offset(
+            math.cos(phase * 1.13 + 5.1) * radius * 0.25,
+            math.sin(phase * 0.48 + 5.8) * radius * 0.48,
+          ),
+      radius: radius * (0.08 + 0.018 * math.sin(phase * 2.8 + 0.4)),
+      colors: <Color>[
+        const Color(0xFFE040FB).withValues(alpha: 0.72),
+        const Color(0xFFFF5252).withValues(alpha: 0.48),
+        Colors.transparent,
+      ],
+    );
 
     // Rotating Radar Sweep Line with Gradient Trail
     final sweepPaint = Paint()
@@ -377,12 +449,35 @@ class _RadarCanvasPainter extends CustomPainter {
         ..strokeWidth = 2.0,
     );
 
-    // Center Home Station Marker
-    canvas.drawCircle(center, 4.0, Paint()..color = Colors.white);
+    // Center station marker pulses as a new scan comes through.
+    final markerRadius = 4.0 + math.sin(phase * 2.0) * 0.8;
+    canvas.drawCircle(
+      center,
+      markerRadius + 4,
+      Paint()..color = WeatherPalette.mistBlue.withValues(alpha: 0.14),
+    );
+    canvas.drawCircle(center, markerRadius, Paint()..color = Colors.white);
     canvas.drawCircle(center, 2.0, Paint()..color = WeatherPalette.canvasDeep);
+  }
+
+  void _drawCell(
+    Canvas canvas, {
+    required Offset center,
+    required double radius,
+    required List<Color> colors,
+  }) {
+    final paint = Paint()
+      ..shader = RadialGradient(
+        colors: colors,
+        stops: colors.length == 4
+            ? const <double>[0.0, 0.35, 0.7, 1.0]
+            : const <double>[0.0, 0.55, 1.0],
+      ).createShader(Rect.fromCircle(center: center, radius: radius));
+    canvas.drawCircle(center, radius, paint);
   }
 
   @override
   bool shouldRepaint(covariant _RadarCanvasPainter oldDelegate) =>
-      oldDelegate.sweepAngle != sweepAngle || oldDelegate.zoomLevel != zoomLevel;
+      oldDelegate.sweepAngle != sweepAngle ||
+      oldDelegate.zoomLevel != zoomLevel;
 }
