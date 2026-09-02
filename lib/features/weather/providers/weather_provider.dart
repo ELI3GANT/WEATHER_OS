@@ -39,6 +39,8 @@ class WeatherProvider extends ChangeNotifier {
   WeatherModel? get weather => _weather;
   String? get errorMessage => _errorMessage;
   bool get isOffline => _isOffline;
+  double get latitude => _latitude;
+  double get longitude => _longitude;
 
   @override
   void dispose() {

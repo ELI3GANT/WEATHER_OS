@@ -360,6 +360,8 @@ class _WeatherTabBody extends StatelessWidget {
           WeatherNavTab.radar => RadarView(
             key: const ValueKey('tab_radar'),
             hourly: weather?.hourly ?? const [],
+            latitude: provider.latitude,
+            longitude: provider.longitude,
           ),
           WeatherNavTab.alerts => WeatherAlertsView(
             key: const ValueKey('tab_alerts'),

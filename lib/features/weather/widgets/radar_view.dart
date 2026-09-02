@@ -12,11 +12,14 @@ import '../../../core/platform_ui/weather_platform_feedback.dart';
 import '../../../core/platform_ui/weather_platform_icons.dart';
 import '../../../core/platform_ui/weather_platform_segmented_control.dart';
 import '../models/hourly_forecast.dart';
+import '../services/rainviewer_radar_service.dart';
 
 class RadarView extends StatefulWidget {
-  const RadarView({required this.hourly, super.key});
+  const RadarView({required this.hourly, required this.latitude, required this.longitude, super.key});
 
   final List<HourlyForecast> hourly;
+  final double latitude;
+  final double longitude;
 
   @override
   State<RadarView> createState() => _RadarViewState();
@@ -31,6 +34,7 @@ class _RadarViewState extends State<RadarView>
 
   int _selectedRangeIndex = 1; // 0: 50mi, 1: 100mi, 2: 250mi
   bool _isPlaying = true;
+  late Future<String?> _radarTile;
   StreamSubscription<int>? _rangeSub;
   StreamSubscription<void>? _playSub;
 
@@ -40,6 +44,7 @@ class _RadarViewState extends State<RadarView>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _radarTile = const RainViewerRadarService().latestTileUrl(latitude: widget.latitude, longitude: widget.longitude);
     _rangeSub = WeatherNativeUIBridge.instance.onRadarRangeChanged.listen((
       int index,
     ) {
@@ -185,18 +190,14 @@ class _RadarViewState extends State<RadarView>
               children: <Widget>[
                 AspectRatio(
                   aspectRatio: 1.1,
-                  child: AnimatedBuilder(
-                    animation: _sweepController,
-                    builder: (BuildContext context, Widget? child) {
-                      return CustomPaint(
-                        painter: _RadarCanvasPainter(
-                          sweepAngle: _sweepController.value * math.pi * 2,
-                          zoomLevel: _selectedRangeIndex == 0
-                              ? 1.3
-                              : (_selectedRangeIndex == 1 ? 1.0 : 0.75),
-                          precipitation: widget.hourly,
-                        ),
-                      );
+                  child: FutureBuilder<String?>(
+                    future: _radarTile,
+                    builder: (context, snapshot) {
+                      final url = snapshot.data;
+                      if (url == null) {
+                        return const Center(child: Text('Live radar unavailable'));
+                      }
+                      return Image.network(url, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Center(child: Text('Live radar unavailable')));
                     },
                   ),
                 ),
