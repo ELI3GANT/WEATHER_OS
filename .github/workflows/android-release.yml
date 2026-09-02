@@ -170,8 +170,13 @@ jobs:
           set -euo pipefail
           aab="build/app/outputs/bundle/release/app-release.aab"
           test -s "$aab"
-          target_sdk="$(apkanalyzer manifest target-sdk "$aab")"
-          package_name="$(apkanalyzer manifest application-id "$aab")"
+          apkanalyzer_path="$(find "$ANDROID_HOME" -type f -name apkanalyzer -print -quit)"
+          if [[ -z "$apkanalyzer_path" ]]; then
+            echo "apkanalyzer was not found below $ANDROID_HOME" >&2
+            exit 1
+          fi
+          target_sdk="$("$apkanalyzer_path" manifest target-sdk "$aab")"
+          package_name="$("$apkanalyzer_path" manifest application-id "$aab")"
           if [[ "$target_sdk" != "$ANDROID_API_LEVEL" ]]; then
             echo "Expected target SDK $ANDROID_API_LEVEL, got $target_sdk" >&2
             exit 1
