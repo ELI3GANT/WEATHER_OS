@@ -170,25 +170,7 @@ jobs:
           set -euo pipefail
           aab="build/app/outputs/bundle/release/app-release.aab"
           test -s "$aab"
-          python3 -c '
-import zipfile, sys
-
-aab_path = "build/app/outputs/bundle/release/app-release.aab"
-with zipfile.ZipFile(aab_path, "r") as z:
-    names = set(z.namelist())
-    if "base/manifest/AndroidManifest.xml" not in names:
-        print("❌ Error: base/manifest/AndroidManifest.xml not found in AAB", file=sys.stderr)
-        sys.exit(1)
-    if not any(n.startswith("base/dex/") for n in names):
-        print("❌ Error: No DEX files found in AAB", file=sys.stderr)
-        sys.exit(1)
-    manifest_bytes = z.read("base/manifest/AndroidManifest.xml")
-    if b"app.weatheros.app" not in manifest_bytes:
-        print("❌ Error: Package app.weatheros.app not found in manifest", file=sys.stderr)
-        sys.exit(1)
-
-print("✅ Release bundle verified: Valid AAB structure, DEX code, and package app.weatheros.app confirmed.")
-'
+          python3 scripts/verify_release_bundle.py "$aab"
           sha256sum "$aab" | tee build/app/outputs/bundle/release/app-release.aab.sha256
 
       - name: Retain verified AAB
