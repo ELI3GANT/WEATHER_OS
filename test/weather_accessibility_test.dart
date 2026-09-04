@@ -27,7 +27,7 @@ void main() {
     await _pumpShowcase(tester, disableAnimations: true);
 
     expect(
-      find.bySemanticsLabel(RegExp(r'Woonsocket, RI\. 71 degrees\. Rain\.')),
+      find.bySemanticsLabel(RegExp(r'New York, NY\. 71 degrees\. Rain\.')),
       findsOneWidget,
     );
     expect(

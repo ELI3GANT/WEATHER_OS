@@ -108,7 +108,7 @@ void main() {
 
     expect(
       find.bySemanticsLabel(
-        'Woonsocket, RI. 65 degrees. Storm. Feels like 59 degrees. '
+        'New York, NY. 65 degrees. Storm. Feels like 59 degrees. '
         'High 68, low 57.',
       ),
       findsOneWidget,

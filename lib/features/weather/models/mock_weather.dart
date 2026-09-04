@@ -5,7 +5,7 @@ import 'weather_model.dart';
 
 abstract final class MockWeather {
   static const WeatherModel newYorkRain = WeatherModel(
-    location: 'Woonsocket, RI',
+    location: 'New York, NY',
     temperature: 71,
     condition: WeatherCondition.rain,
     feelsLike: 69,
@@ -175,7 +175,7 @@ abstract final class MockWeather {
   );
 
   static final WeatherModel newYorkStorm = WeatherModel(
-    location: 'Woonsocket, RI',
+    location: 'New York, NY',
     temperature: 65,
     condition: WeatherCondition.storm,
     feelsLike: 59,

@@ -10,26 +10,20 @@ FONT_MEDIUM = os.path.join(PROJECT_DIR, "assets/fonts/Barlow-Medium.ttf")
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 os.makedirs("/tmp/store_render", exist_ok=True)
 
-# 1. Prepare Base UI Sources
-# Screen 1: High-res Telemetry (captured earlier at 989x2196)
+# Sources using the fresh New York, NY captures
 ui_telemetry = "/tmp/weatheros_captures/01_telemetry.png"
 if not os.path.exists(ui_telemetry):
-    ui_telemetry = os.path.join(PROJECT_DIR, "test/visual/goldens/home_compact_android.png")
+    ui_telemetry = os.path.join(PROJECT_DIR, "test/visual/failures/showcase_compact_testImage.png")
 
-# Screen 2: Hourly & 7-Day Forecast (Showcase compact)
-ui_forecast = os.path.join(PROJECT_DIR, "test/visual/goldens/showcase_compact.png")
-
-# Screen 3: Storm / Severe Risk Matrix (Showcase storm)
-ui_storm = os.path.join(PROJECT_DIR, "test/visual/goldens/showcase_storm.png")
-
-# Screen 4: High-density Telemetry / Lower Primitives
-ui_density = os.path.join(PROJECT_DIR, "test/visual/goldens/showcase_compact_lower.png")
+ui_forecast = os.path.join(PROJECT_DIR, "test/visual/failures/showcase_compact_testImage.png")
+ui_storm = os.path.join(PROJECT_DIR, "test/visual/failures/showcase_storm_testImage.png")
+ui_density = os.path.join(PROJECT_DIR, "test/visual/failures/showcase_compact_lower_testImage.png")
 
 screens = [
     {
         "filename": "02_screenshot_telemetry.png",
         "glow_color": "#0284C7",
-        "pill": "LIVE TELEMETRY",
+        "pill": "NEW YORK, NY • TELEMETRY",
         "title": "PRECISION WEATHER",
         "subtitle": "Cinematic conditions, UV & atmospheric index",
         "ui_source": ui_telemetry,
@@ -37,7 +31,7 @@ screens = [
     {
         "filename": "03_screenshot_forecast.png",
         "glow_color": "#0D9488",
-        "pill": "ATMOSPHERIC RAILS",
+        "pill": "NEW YORK, NY • 7-DAY RAILS",
         "title": "HOURLY & 7-DAY OUTLOOK",
         "subtitle": "Calibrated thermal bars & dynamic threat matrix",
         "ui_source": ui_forecast,
@@ -45,7 +39,7 @@ screens = [
     {
         "filename": "04_screenshot_storm.png",
         "glow_color": "#7C3AED",
-        "pill": "HAZARD INTELLIGENCE",
+        "pill": "NEW YORK, NY • HAZARDS",
         "title": "SEVERE RISK MATRIX",
         "subtitle": "Multi-vector convective & storm risk analysis",
         "ui_source": ui_storm,
@@ -53,7 +47,7 @@ screens = [
     {
         "filename": "05_screenshot_density.png",
         "glow_color": "#0369A1",
-        "pill": "DEEP ATMOSPHERE",
+        "pill": "NEW YORK, NY • DEEP METRICS",
         "title": "HIGH-DENSITY METRICS",
         "subtitle": "Barometric pressure, dew point & wind tracking",
         "ui_source": ui_density,
@@ -76,9 +70,8 @@ def compose_premium_screenshot(cfg):
     sub_txt = cfg["subtitle"]
     ui_src = cfg["ui_source"]
 
-    print(f"Rendering {cfg['filename']}...")
+    print(f"Rendering {cfg['filename']} with New York, NY source...")
 
-    # A. Scale and crop UI content to exact SCREEN_W x SCREEN_H
     cropped_screen = f"/tmp/store_render/screen_{cfg['filename']}"
     subprocess.run([
         "magick", ui_src,
@@ -88,7 +81,6 @@ def compose_premium_screenshot(cfg):
         cropped_screen
     ], check=True)
 
-    # B. Add status bar mockup at top of screen (time 9:41, wifi, battery icons)
     screen_with_status = f"/tmp/store_render/status_{cfg['filename']}"
     subprocess.run([
         "magick", cropped_screen,
@@ -102,7 +94,6 @@ def compose_premium_screenshot(cfg):
         screen_with_status
     ], check=True)
 
-    # C. Build rounded screen mask
     masked_screen = f"/tmp/store_render/masked_{cfg['filename']}"
     subprocess.run([
         "magick",
@@ -120,28 +111,23 @@ def compose_premium_screenshot(cfg):
         masked_screen
     ], check=True)
 
-    # D. Build phone body with titanium border & punch hole camera
     phone_chassis = f"/tmp/store_render/chassis_{cfg['filename']}"
     subprocess.run([
         "magick",
         "-size", f"{PHONE_W}x{PHONE_H}",
         "xc:transparent",
-        # Outer shell
         "-fill", "#111A26",
         "-stroke", "#28394E",
         "-strokewidth", "3",
         "-draw", f"roundrectangle 2,2 {PHONE_W-2},{PHONE_H-2} {CORNER},{CORNER}",
-        # Punch hole camera pill
         "-stroke", "none",
         "-fill", "#05090F",
         "-draw", f"roundrectangle {PHONE_W//2 - 40},10 {PHONE_W//2 + 40},32 11,11",
-        # Camera lens reflection
         "-fill", "#1E2C3D",
         "-draw", f"circle {PHONE_W//2 - 16},21 {PHONE_W//2 - 13},21",
         phone_chassis
     ], check=True)
 
-    # E. Combine chassis with screen
     assembled_phone = f"/tmp/store_render/phone_{cfg['filename']}"
     subprocess.run([
         "magick", phone_chassis,
@@ -149,14 +135,12 @@ def compose_premium_screenshot(cfg):
         "-gravity", "Center",
         "-compose", "Over",
         "-composite",
-        # Bottom gesture nav bar
         "-stroke", "none",
         "-fill", "#4A5D75",
         "-draw", f"roundrectangle {PHONE_W//2 - 75},{PHONE_H - 18} {PHONE_W//2 + 75},{PHONE_H - 13} 2.5,2.5",
         assembled_phone
     ], check=True)
 
-    # F. Add soft deep drop shadow behind assembled phone
     phone_with_shadow = f"/tmp/store_render/shadow_{cfg['filename']}"
     subprocess.run([
         "magick", assembled_phone,
@@ -167,13 +151,11 @@ def compose_premium_screenshot(cfg):
         phone_with_shadow
     ], check=True)
 
-    # G. Build Background with ambient colored backlight glow
     bg_canvas = f"/tmp/store_render/bg_{cfg['filename']}"
     subprocess.run([
         "magick",
         "-size", "1080x2400",
         "gradient:#0A121D-#04070B",
-        # Ambient color glow spotlight behind the phone
         "(",
         "-size", "960x960",
         f"radial-gradient:{glow_col}33-transparent",
@@ -184,18 +166,17 @@ def compose_premium_screenshot(cfg):
         bg_canvas
     ], check=True)
 
-    # H. Render Badge Pill
     pill_img = f"/tmp/store_render/pill_{cfg['filename']}"
     subprocess.run([
         "magick",
-        "-size", "400x56",
+        "-size", "440x56",
         "xc:transparent",
         "-fill", "#0E1C2C",
         "-stroke", "#223E5E",
         "-strokewidth", "1.5",
-        "-draw", "roundrectangle 2,2 398,54 26,26",
+        "-draw", "roundrectangle 2,2 438,54 26,26",
         "-font", FONT_BOLD,
-        "-pointsize", "22",
+        "-pointsize", "21",
         "-fill", "#38BDF8",
         "-stroke", "none",
         "-gravity", "Center",
@@ -203,27 +184,22 @@ def compose_premium_screenshot(cfg):
         pill_img
     ], check=True)
 
-    # I. Final Composition
     subprocess.run([
         "magick", bg_canvas,
-        # Badge Pill
         pill_img,
         "-gravity", "North",
         "-geometry", "+0+95",
         "-composite",
-        # Title
         "-font", FONT_BOLD,
         "-pointsize", "72",
         "-fill", "#F8FAFC",
         "-gravity", "North",
         "-annotate", "+0+175", title_txt,
-        # Subtitle
         "-font", FONT_MEDIUM,
         "-pointsize", "34",
         "-fill", "#94A3B8",
         "-gravity", "North",
         "-annotate", "+0+268", sub_txt,
-        # Phone with shadow
         phone_with_shadow,
         "-gravity", "North",
         "-geometry", "+0+385",
@@ -238,4 +214,4 @@ def compose_premium_screenshot(cfg):
 for screen in screens:
     compose_premium_screenshot(screen)
 
-print("🎉 All premium store screenshots successfully generated!")
+print("🎉 All New York screenshots successfully generated!")

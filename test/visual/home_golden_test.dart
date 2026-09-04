@@ -164,7 +164,7 @@ void main() {
       platform: TargetPlatform.iOS,
       textScaler: const TextScaler.linear(1.8),
     );
-    expect(find.text('Woonsocket, RI'), findsOneWidget);
+    expect(find.text('New York, NY'), findsOneWidget);
     expect(find.text('71°'), findsAtLeastNWidgets(2));
     expect(find.text('Rain'), findsOneWidget);
     expect(find.text('Feels like 69°'), findsOneWidget);

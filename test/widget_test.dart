@@ -22,7 +22,7 @@ void main() {
     await tester.pump();
 
     expect(find.byType(WeatherLoadingView), findsNothing);
-    expect(find.text('Woonsocket, RI'), findsOneWidget);
+    expect(find.text('New York, NY'), findsOneWidget);
     expect(find.text('71°'), findsAtLeastNWidgets(1));
     expect(find.text('Rain'), findsAtLeastNWidgets(1));
     expect(tester.takeException(), isNull);
@@ -41,7 +41,7 @@ void main() {
     await tester.pump();
 
     // Verify initial load
-    expect(find.text('Woonsocket, RI'), findsOneWidget);
+    expect(find.text('New York, NY'), findsOneWidget);
 
     // Tap an hour in the rail to change selected forecast index
     final hourCell = find.text('10 AM');
@@ -66,10 +66,10 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
     await tester.pump();
 
-    expect(find.text('Woonsocket, RI'), findsOneWidget);
+    expect(find.text('New York, NY'), findsOneWidget);
 
     // Tap location header to open dialog
-    await tester.tap(find.text('Woonsocket, RI'));
+    await tester.tap(find.text('New York, NY'));
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pump(const Duration(milliseconds: 300));
 
