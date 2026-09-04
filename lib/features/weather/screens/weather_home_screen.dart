@@ -38,10 +38,12 @@ class WeatherHomeScreen extends StatefulWidget {
     super.key,
     this.currentTime,
     this.atmosphereProgress,
+    this.initialTab = WeatherNavTab.today,
   });
 
   final DateTime? currentTime;
   final double? atmosphereProgress;
+  final WeatherNavTab initialTab;
 
   @override
   State<WeatherHomeScreen> createState() => _WeatherHomeScreenState();
@@ -49,7 +51,7 @@ class WeatherHomeScreen extends StatefulWidget {
 
 class _WeatherHomeScreenState extends State<WeatherHomeScreen> {
   int _selectedForecastIndex = 0;
-  WeatherNavTab _currentTab = WeatherNavTab.today;
+  late WeatherNavTab _currentTab;
   String? _lastLoadedLocation;
   StreamSubscription<int>? _tabSub;
   StreamSubscription<String>? _headerActionSub;
@@ -57,6 +59,7 @@ class _WeatherHomeScreenState extends State<WeatherHomeScreen> {
   @override
   void initState() {
     super.initState();
+    _currentTab = widget.initialTab;
     WeatherNativeUIBridge.instance.initialize();
     WeatherPreferencesService.instance.addListener(_handlePreferencesChanged);
     _tabSub = WeatherNativeUIBridge.instance.onTabSelected.listen((int index) {
