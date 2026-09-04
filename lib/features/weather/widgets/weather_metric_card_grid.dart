@@ -19,7 +19,7 @@ class WeatherMetricCardGrid extends StatelessWidget {
         label: 'PRECIP CHANCE',
         value: '${weather.precipChance}%',
         subValue: weather.precipChance > 60 ? 'High' : (weather.precipChance > 30 ? 'Moderate' : 'Low'),
-        subColor: weather.precipChance > 60 ? const Color(0xFFFF5252) : const Color(0xFF69F0AE),
+        subColor: weather.precipChance > 60 ? const Color(0xFFFF5252) : WeatherPalette.success,
         icon: Icons.water_drop_outlined,
       ),
       _CardData(
@@ -33,7 +33,7 @@ class WeatherMetricCardGrid extends StatelessWidget {
         label: 'HUMIDITY',
         value: '${weather.humidity}%',
         subValue: weather.humidity > 80 ? 'Very High' : 'Normal',
-        subColor: weather.humidity > 80 ? const Color(0xFFFF5252) : WeatherPalette.textSecondary,
+        subColor: weather.humidity > 80 ? const Color(0xFFFF7979) : WeatherPalette.textSecondary,
         icon: Icons.opacity,
       ),
       _CardData(
@@ -47,14 +47,14 @@ class WeatherMetricCardGrid extends StatelessWidget {
         label: 'VISIBILITY',
         value: '${weather.visibilityMiles.round()} mi',
         subValue: weather.visibilityMiles >= 6 ? 'Good' : 'Reduced',
-        subColor: const Color(0xFF69F0AE),
+        subColor: WeatherPalette.success,
         icon: Icons.visibility_outlined,
       ),
       _CardData(
         label: 'UV INDEX',
         value: '${weather.uvIndex}',
         subValue: weather.uvIndex <= 2 ? 'Low' : (weather.uvIndex <= 5 ? 'Moderate' : 'High'),
-        subColor: const Color(0xFF69F0AE),
+        subColor: WeatherPalette.success,
         icon: Icons.wb_sunny_outlined,
       ),
     ];

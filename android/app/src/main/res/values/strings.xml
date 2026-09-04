@@ -2,4 +2,5 @@
 <resources>
     <string name="app_name">WeatherOS</string>
     <string name="widget_description">Live WeatherOS temperature, conditions, and high/low telemetry.</string>
+    <string name="widget_icon_description">WeatherOS</string>
 </resources>

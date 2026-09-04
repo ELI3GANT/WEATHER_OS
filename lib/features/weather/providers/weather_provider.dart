@@ -30,6 +30,7 @@ class WeatherProvider extends ChangeNotifier {
   String? _errorMessage;
   bool _isOffline = false;
   bool _isDisposed = false;
+  int _loadGeneration = 0;
 
   double _latitude = 40.7128;
   double _longitude = -74.0060;
@@ -53,9 +54,12 @@ class WeatherProvider extends ChangeNotifier {
     double? longitude,
     String? locationName,
   }) async {
-    if (_state == WeatherLoadState.loading) {
-      return;
-    }
+    if (_isDisposed) return;
+
+    // A location change can arrive while the initial GPS or weather request
+    // is still in flight. Each request gets a generation so an older response
+    // can never overwrite the location the user selected most recently.
+    final generation = ++_loadGeneration;
 
     _state = _weather != null
         ? WeatherLoadState.loaded
@@ -65,7 +69,7 @@ class WeatherProvider extends ChangeNotifier {
     // Hydrate from offline cache immediately on cold start
     if (_weather == null && cacheService != null) {
       final cached = await cacheService!.getCachedWeather();
-      if (cached != null && !_isDisposed) {
+      if (cached != null && !_isDisposed && generation == _loadGeneration) {
         _weather = cached;
         _state = WeatherLoadState.loaded;
         _isOffline = true;
@@ -73,12 +77,15 @@ class WeatherProvider extends ChangeNotifier {
       }
     }
 
+    if (_isDisposed || generation != _loadGeneration) return;
+
     var targetLat = latitude ?? _latitude;
     var targetLong = longitude ?? _longitude;
     var targetName = locationName ?? _locationName;
 
     if (latitude == null && locationService != null) {
       final loc = await locationService!.getCurrentLocation();
+      if (_isDisposed || generation != _loadGeneration) return;
       if (loc != null) {
         targetLat = loc.latitude;
         targetLong = loc.longitude;
@@ -86,17 +93,16 @@ class WeatherProvider extends ChangeNotifier {
       }
     }
 
-    _latitude = targetLat;
-    _longitude = targetLong;
-    _locationName = targetName;
-
     try {
       final fresh = await repository.getCurrentWeather(
         latitude: targetLat,
         longitude: targetLong,
         locationName: targetName,
       );
-      if (!_isDisposed) {
+      if (!_isDisposed && generation == _loadGeneration) {
+        _latitude = targetLat;
+        _longitude = targetLong;
+        _locationName = targetName;
         _weather = fresh;
         _state = WeatherLoadState.loaded;
         _isOffline = false;
@@ -104,10 +110,10 @@ class WeatherProvider extends ChangeNotifier {
         if (cacheService != null) {
           await cacheService!.saveWeather(fresh);
         }
-        unawaited(telemetryExporter(fresh));
+        unawaited(_exportTelemetrySafely(fresh));
       }
     } on Exception {
-      if (!_isDisposed) {
+      if (!_isDisposed && generation == _loadGeneration) {
         if (_weather == null) {
           _errorMessage = 'Weather data is temporarily unavailable.';
           _state = WeatherLoadState.error;
@@ -118,7 +124,18 @@ class WeatherProvider extends ChangeNotifier {
     }
 
     if (!_isDisposed) {
+      if (generation != _loadGeneration) return;
       notifyListeners();
+    }
+  }
+
+  Future<void> _exportTelemetrySafely(WeatherModel weather) async {
+    try {
+      await telemetryExporter(weather);
+    } on Object catch (error) {
+      // Watch, WidgetKit, and Android widget bridges are optional integrations.
+      // A platform channel failure must never take down the weather screen.
+      debugPrint('[WeatherProvider] Widget export skipped: $error');
     }
   }
 

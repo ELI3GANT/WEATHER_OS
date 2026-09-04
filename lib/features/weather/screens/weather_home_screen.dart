@@ -16,6 +16,7 @@ import '../models/weather_model.dart';
 import '../providers/weather_provider.dart';
 import '../providers/weather_scope.dart';
 import '../services/location_search_service.dart';
+import '../services/weather_preferences_service.dart';
 import '../widgets/current_conditions_hero.dart';
 import '../widgets/daily_forecast_view.dart';
 import '../widgets/hourly_forecast_rail.dart';
@@ -49,6 +50,7 @@ class WeatherHomeScreen extends StatefulWidget {
 class _WeatherHomeScreenState extends State<WeatherHomeScreen> {
   int _selectedForecastIndex = 0;
   WeatherNavTab _currentTab = WeatherNavTab.today;
+  String? _lastLoadedLocation;
   StreamSubscription<int>? _tabSub;
   StreamSubscription<String>? _headerActionSub;
 
@@ -56,9 +58,14 @@ class _WeatherHomeScreenState extends State<WeatherHomeScreen> {
   void initState() {
     super.initState();
     WeatherNativeUIBridge.instance.initialize();
+    WeatherPreferencesService.instance.addListener(_handlePreferencesChanged);
     _tabSub = WeatherNativeUIBridge.instance.onTabSelected.listen((int index) {
-      if (index >= 0 && index < WeatherNavTab.values.length) {
-        _onTabSelected(WeatherNavTab.values[index]);
+      final showRadar = WeatherPreferencesService.instance.showRadarTab;
+      final availableTabs = WeatherNavTab.values
+          .where((t) => showRadar || t != WeatherNavTab.radar)
+          .toList();
+      if (mounted && index >= 0 && index < availableTabs.length) {
+        _onTabSelected(availableTabs[index]);
       }
     });
     _headerActionSub = WeatherNativeUIBridge.instance.onHeaderAction.listen((
@@ -75,9 +82,22 @@ class _WeatherHomeScreenState extends State<WeatherHomeScreen> {
 
   @override
   void dispose() {
+    WeatherPreferencesService.instance.removeListener(_handlePreferencesChanged);
     _tabSub?.cancel();
     _headerActionSub?.cancel();
     super.dispose();
+  }
+
+  void _handlePreferencesChanged() {
+    if (!mounted) return;
+    if (!WeatherPreferencesService.instance.showRadarTab &&
+        _currentTab == WeatherNavTab.radar) {
+      setState(() {
+        _currentTab = WeatherNavTab.today;
+      });
+    } else {
+      setState(() {});
+    }
   }
 
   void _onForecastSelected(int index) {
@@ -98,14 +118,20 @@ class _WeatherHomeScreenState extends State<WeatherHomeScreen> {
   }
 
   void _onTabSelected(WeatherNavTab tab) {
+    if (!mounted) return;
     setState(() {
       _currentTab = tab;
     });
     final alertCount = _getAlertCount(WeatherScope.read(context).weather);
+    final showRadar = WeatherPreferencesService.instance.showRadarTab;
+    final availableTabs = WeatherNavTab.values
+        .where((t) => showRadar || t != WeatherNavTab.radar)
+        .toList();
+    final tabIndex = availableTabs.indexOf(tab);
     WeatherNativeUIBridge.instance.updateNavigationState(
       NavigationState(
-        selectedTab: tab.index,
-        tabCount: WeatherNavTab.values.length,
+        selectedTab: tabIndex >= 0 ? tabIndex : 0,
+        tabCount: availableTabs.length,
         alertCount: alertCount,
       ),
     );
@@ -118,41 +144,38 @@ class _WeatherHomeScreenState extends State<WeatherHomeScreen> {
       title: 'Station Intelligence & Settings',
       builder: (BuildContext ctx) => WeatherSettingsModal(
         onRefresh: () => WeatherScope.read(context).refresh(),
-        onChangeLocation: _openLocationChooser,
+        onChangeLocation: () {
+          // Dismiss the modal bottom sheet cleanly before opening the location dialog
+          Navigator.of(ctx, rootNavigator: true).pop();
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              _openLocationChooser();
+            }
+          });
+        },
       ),
     );
   }
 
   Future<void> _openLocationChooser() async {
-    final controller = TextEditingController();
     final query = await showDialog<String>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Change weather location'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          textInputAction: TextInputAction.search,
-          onSubmitted: (_) => Navigator.of(dialogContext).pop(controller.text),
-          decoration: const InputDecoration(
-            hintText: 'ZIP code, city, or state',
-            prefixIcon: Icon(Icons.location_on_outlined),
-          ),
-        ),
-        actions: <Widget>[
-          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(dialogContext, controller.text), child: const Text('Use location')),
-        ],
-      ),
+      builder: (dialogContext) => const _LocationInputDialog(),
     );
-    controller.dispose();
     if (!mounted || query == null || query.trim().isEmpty) return;
     final result = await const LocationSearchService().search(query);
     if (!mounted) return;
     if (result == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Location not found. Try a ZIP code or city.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Location not found. Try a ZIP code or city.'),
+        ),
+      );
       return;
     }
+    setState(() {
+      _selectedForecastIndex = 0;
+    });
     await WeatherScope.read(context).setLocation(result);
   }
 
@@ -201,6 +224,11 @@ class _WeatherHomeScreenState extends State<WeatherHomeScreen> {
     final provider = WeatherScope.watch(context);
     final weather = provider.weather;
 
+    if (weather != null && weather.location != _lastLoadedLocation) {
+      _lastLoadedLocation = weather.location;
+      _selectedForecastIndex = 0;
+    }
+
     WeatherCondition activeCondition = WeatherCondition.cloudy;
     int? activeHour;
 
@@ -223,8 +251,17 @@ class _WeatherHomeScreenState extends State<WeatherHomeScreen> {
       now: widget.currentTime ?? DateTime.now(),
     );
 
-    return Scaffold(
-      body: Stack(
+    return PopScope(
+      canPop: _currentTab == WeatherNavTab.today,
+      onPopInvokedWithResult: (bool didPop, dynamic result) {
+        if (!didPop && _currentTab != WeatherNavTab.today) {
+          setState(() {
+            _currentTab = WeatherNavTab.today;
+          });
+        }
+      },
+      child: Scaffold(
+        body: Stack(
         fit: StackFit.expand,
         children: <Widget>[
           Positioned.fill(
@@ -285,6 +322,7 @@ class _WeatherHomeScreenState extends State<WeatherHomeScreen> {
                             currentTab: _currentTab,
                             onTabSelected: _onTabSelected,
                             alertCount: alertCount,
+                            showRadar: WeatherPreferencesService.instance.showRadarTab,
                           ),
                       ],
                     );
@@ -293,8 +331,9 @@ class _WeatherHomeScreenState extends State<WeatherHomeScreen> {
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 class _WeatherTabBody extends StatelessWidget {
@@ -340,34 +379,36 @@ class _WeatherTabBody extends StatelessWidget {
             ),
           );
         },
-        child: switch (currentTab) {
-          WeatherNavTab.today => _TodayDashboardView(
-            key: const ValueKey('tab_today'),
-            weather: provider.weather!,
-            selectedForecastIndex: selectedForecastIndex,
-            onForecastSelected: onForecastSelected,
-          ),
-          WeatherNavTab.hourly => _HourlyTabDetailView(
-            key: const ValueKey('tab_hourly'),
-            weather: provider.weather!,
-            selectedForecastIndex: selectedForecastIndex,
-            onForecastSelected: onForecastSelected,
-          ),
-          WeatherNavTab.daily => DailyForecastView(
-            key: const ValueKey('tab_daily'),
-            weather: provider.weather!,
-          ),
-          WeatherNavTab.radar => RadarView(
-            key: const ValueKey('tab_radar'),
-            hourly: provider.weather!.hourly,
-            latitude: provider.latitude,
-            longitude: provider.longitude,
-          ),
-          WeatherNavTab.alerts => WeatherAlertsView(
-            key: const ValueKey('tab_alerts'),
-            weather: provider.weather,
-          ),
-        },
+        child: provider.weather == null
+            ? const WeatherLoadingView()
+            : switch (currentTab) {
+                WeatherNavTab.today => _TodayDashboardView(
+                  key: const ValueKey('tab_today'),
+                  weather: provider.weather!,
+                  selectedForecastIndex: selectedForecastIndex,
+                  onForecastSelected: onForecastSelected,
+                ),
+                WeatherNavTab.hourly => _HourlyTabDetailView(
+                  key: const ValueKey('tab_hourly'),
+                  weather: provider.weather!,
+                  selectedForecastIndex: selectedForecastIndex,
+                  onForecastSelected: onForecastSelected,
+                ),
+                WeatherNavTab.daily => DailyForecastView(
+                  key: const ValueKey('tab_daily'),
+                  weather: provider.weather!,
+                ),
+                WeatherNavTab.radar => RadarView(
+                  key: const ValueKey('tab_radar'),
+                  hourly: provider.weather!.hourly,
+                  latitude: provider.latitude,
+                  longitude: provider.longitude,
+                ),
+                WeatherNavTab.alerts => WeatherAlertsView(
+                  key: const ValueKey('tab_alerts'),
+                  weather: provider.weather,
+                ),
+              },
       ),
       WeatherLoadState.error => WeatherErrorView(
         message: provider.errorMessage!,
@@ -390,7 +431,8 @@ class _TodayDashboardView extends StatelessWidget {
   final ValueChanged<int> onForecastSelected;
 
   WeatherModel _buildDisplayWeather() {
-    if (selectedForecastIndex > 0 &&
+    if (weather.hourly.isNotEmpty &&
+        selectedForecastIndex > 0 &&
         selectedForecastIndex < weather.hourly.length) {
       final forecast = weather.hourly[selectedForecastIndex];
       return WeatherModel(
@@ -524,3 +566,58 @@ class _HourlyTabDetailView extends StatelessWidget {
     );
   }
 }
+
+class _LocationInputDialog extends StatefulWidget {
+  const _LocationInputDialog();
+
+  @override
+  State<_LocationInputDialog> createState() => _LocationInputDialogState();
+}
+
+class _LocationInputDialogState extends State<_LocationInputDialog> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    Navigator.of(context).pop(_controller.text);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Change weather location'),
+      content: TextField(
+        controller: _controller,
+        autofocus: true,
+        textInputAction: TextInputAction.search,
+        onSubmitted: (_) => _submit(),
+        decoration: const InputDecoration(
+          hintText: 'ZIP code, city, or state',
+          prefixIcon: Icon(Icons.location_on_outlined),
+        ),
+      ),
+      actions: <Widget>[
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: _submit,
+          child: const Text('Use location'),
+        ),
+      ],
+    );
+  }
+}
+

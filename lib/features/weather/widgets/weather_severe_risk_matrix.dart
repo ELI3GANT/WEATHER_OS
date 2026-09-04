@@ -15,7 +15,7 @@ class WeatherSevereRiskMatrix extends StatelessWidget {
   Color _levelColor(double val) {
     if (val >= 0.7) return const Color(0xFFFF5252);
     if (val >= 0.35) return const Color(0xFFFFB300);
-    if (val >= 0.1) return const Color(0xFF69F0AE);
+    if (val >= 0.1) return WeatherPalette.success;
     return WeatherPalette.textTertiary;
   }
 
@@ -49,6 +49,12 @@ class WeatherSevereRiskMatrix extends StatelessWidget {
       'tornado',
     ];
 
+    final riskBadgeColor = switch (weather.riskLevel.toUpperCase()) {
+      'HIGH RISK' => const Color(0xFFFF5252),
+      'MODERATE RISK' => const Color(0xFFFFB300),
+      _ => WeatherPalette.success,
+    };
+
     return WeatherPlatformCard(
       padding: const EdgeInsets.all(WeatherSpacing.space4),
       child: Column(
@@ -69,20 +75,10 @@ class WeatherSevereRiskMatrix extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: (weather.riskLevel.toUpperCase() == 'HIGH RISK'
-                          ? const Color(0xFFFF5252)
-                          : (weather.riskLevel.toUpperCase() == 'MODERATE RISK'
-                              ? const Color(0xFFFFB300)
-                              : const Color(0xFF69F0AE)))
-                      .withValues(alpha: 0.15),
+                  color: riskBadgeColor.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(WeatherRadii.pill),
                   border: Border.all(
-                    color: (weather.riskLevel.toUpperCase() == 'HIGH RISK'
-                            ? const Color(0xFFFF5252)
-                            : (weather.riskLevel.toUpperCase() == 'MODERATE RISK'
-                                ? const Color(0xFFFFB300)
-                                : const Color(0xFF69F0AE)))
-                        .withValues(alpha: 0.4),
+                    color: riskBadgeColor.withValues(alpha: 0.4),
                     width: 1,
                   ),
                 ),
@@ -91,11 +87,7 @@ class WeatherSevereRiskMatrix extends StatelessWidget {
                   style: WeatherType.label.copyWith(
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
-                    color: (weather.riskLevel.toUpperCase() == 'HIGH RISK'
-                        ? const Color(0xFFFF5252)
-                        : (weather.riskLevel.toUpperCase() == 'MODERATE RISK'
-                            ? const Color(0xFFFFB300)
-                            : const Color(0xFF69F0AE))),
+                    color: riskBadgeColor,
                   ),
                 ),
               ),

@@ -8,77 +8,189 @@
     android:padding="14dp"
     android:importantForAccessibility="yes">
 
+    <!-- Top Header: Location Pill & Condition Pill -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical">
 
-        <TextView
-            android:id="@+id/widget_location"
+        <!-- Location Badge Pill -->
+        <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="WeatherOS"
-            android:textColor="@color/widgetTextSecondary"
-            android:textSize="12sp"
+            android:background="@drawable/widget_pill_badge"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingStart="8dp"
+            android:paddingEnd="10dp"
+            android:paddingTop="3dp"
+            android:paddingBottom="3dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="●"
+                android:textColor="@color/widgetAccent"
+                android:textSize="8sp"
+                android:layout_marginEnd="5dp" />
+
+            <TextView
+                android:id="@+id/widget_location"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="WeatherOS"
+                android:textColor="@color/widgetTextPrimary"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:maxLines="1"
+                android:ellipsize="end" />
+        </LinearLayout>
+
+        <!-- Condition Badge Pill -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="6dp"
+            android:background="@drawable/widget_pill_badge"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingStart="8dp"
+            android:paddingEnd="9dp"
+            android:paddingTop="3dp"
+            android:paddingBottom="3dp">
+
+            <TextView
+                android:id="@+id/widget_glyph"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="☀"
+                android:textColor="@color/widgetAccent"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:contentDescription="Condition glyph" />
+
+            <TextView
+                android:id="@+id/widget_condition"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:text="Syncing"
+                android:textColor="@color/widgetTextSecondary"
+                android:textSize="10.5sp"
+                android:textStyle="bold"
+                android:maxLines="1"
+                android:ellipsize="end" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Main Section: Big Temp + Feels Like on Left, High/Low & Metrics on Right -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginTop="6dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <!-- Left: Large Temperature + Feels Like -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/widget_temperature"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="—"
+                android:textColor="@color/widgetTextPrimary"
+                android:textSize="40sp"
+                android:textStyle="bold"
+                android:includeFontPadding="false" />
+
+            <TextView
+                android:id="@+id/widget_feels_like"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="1dp"
+                android:text="Feels like —"
+                android:textColor="@color/widgetTextSecondary"
+                android:textSize="11sp"
+                android:maxLines="1"
+                android:ellipsize="end" />
+        </LinearLayout>
+
+        <!-- Right: Stat Chips (High/Low + Metrics) -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="end">
+
+            <TextView
+                android:id="@+id/widget_high_low"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/widget_stat_chip"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:paddingTop="3dp"
+                android:paddingBottom="3dp"
+                android:text="H —   L —"
+                android:textColor="@color/widgetTextPrimary"
+                android:textSize="10.5sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/widget_metrics"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:background="@drawable/widget_stat_chip"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:paddingTop="3dp"
+                android:paddingBottom="3dp"
+                android:text="☂ 0%   ༄ 0mph"
+                android:textColor="@color/widgetTextSecondary"
+                android:textSize="10sp"
+                android:maxLines="1" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Bottom Footer: Risk Level + Sync Timestamp -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:id="@+id/widget_risk"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="● LOW RISK"
+            android:textColor="@color/widgetSuccess"
+            android:textSize="9.5sp"
             android:textStyle="bold"
             android:maxLines="1"
             android:ellipsize="end" />
 
         <TextView
-            android:id="@+id/widget_glyph"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:gravity="center"
-            android:text="☂"
-            android:textColor="@color/widgetAccent"
-            android:textSize="20sp"
-            android:textStyle="bold"
-            android:contentDescription="Weather condition" />
+            android:id="@+id/widget_updated"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Waiting for sync"
+            android:textColor="@color/widgetTextMuted"
+            android:textSize="9.5sp"
+            android:maxLines="1"
+            android:ellipsize="end" />
     </LinearLayout>
-
-    <TextView
-        android:id="@+id/widget_temperature"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:text="71°"
-        android:textColor="@color/widgetTextPrimary"
-        android:textSize="38sp"
-        android:textStyle="bold" />
-
-    <TextView
-        android:id="@+id/widget_condition"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Rain • Feels like 69°"
-        android:textColor="@color/widgetAccent"
-        android:textSize="13sp"
-        android:textStyle="bold"
-        android:maxLines="1"
-        android:ellipsize="end" />
-
-    <TextView
-        android:id="@+id/widget_high_low"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
-        android:text="H 72°   L 62°"
-        android:textColor="@color/widgetTextSecondary"
-        android:textSize="11sp"
-        android:maxLines="1"
-        android:ellipsize="end" />
-
-    <TextView
-        android:id="@+id/widget_updated"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
-        android:text="Updated just now"
-        android:textColor="@color/widgetTextMuted"
-        android:textSize="10sp"
-        android:maxLines="1"
-        android:ellipsize="end" />
 
 </LinearLayout>

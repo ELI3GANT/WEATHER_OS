@@ -21,7 +21,7 @@ class CurrentConditionsHero extends StatelessWidget {
     return switch (risk.toUpperCase()) {
       'HIGH RISK' => const Color(0xFFFF5252),
       'MODERATE RISK' => const Color(0xFFFFB300),
-      _ => const Color(0xFF69F0AE),
+      _ => WeatherPalette.success,
     };
   }
 

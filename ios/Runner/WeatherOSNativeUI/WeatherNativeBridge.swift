@@ -1,6 +1,8 @@
 import Flutter
 import SwiftUI
 import UIKit
+import WatchConnectivity
+import WidgetKit
 
 public enum NativeSheetState: String {
     case none
@@ -35,10 +37,15 @@ public class WeatherNativeBridge: NSObject, FlutterPlugin, ObservableObject, UIA
             name: "tech.onlytrueperspective.weatheros/native_ui",
             binaryMessenger: registrar.messenger()
         )
+        let watchChannel = FlutterMethodChannel(
+            name: "tech.onlytrueperspective.weatheros/watch_sync",
+            binaryMessenger: registrar.messenger()
+        )
         let instance = WeatherNativeBridge()
         instance.channel = channel
         WeatherNativeBridge.instance = instance
         registrar.addMethodCallDelegate(instance, channel: channel)
+        registrar.addMethodCallDelegate(instance, channel: watchChannel)
 
         // Attach native overlay when root view controller is ready
         DispatchQueue.main.async {
@@ -158,6 +165,34 @@ public class WeatherNativeBridge: NSObject, FlutterPlugin, ObservableObject, UIA
                     if let tab = args["showTabBar"] as? Bool { self.showTabBar = tab }
                     if let header = args["showHeader"] as? Bool { self.showHeader = header }
                     if let radar = args["showRadarControls"] as? Bool { self.showRadarControls = radar }
+                }
+            }
+            result(nil)
+
+        case "updateWatchAndWidgets":
+            guard let args = call.arguments as? [String: Any],
+                  let jsonPayload = args["jsonPayload"] as? String else {
+                result(FlutterError(
+                    code: "invalid_payload",
+                    message: "Weather telemetry payload is missing.",
+                    details: nil
+                ))
+                return
+            }
+
+            let appGroup = args["appGroup"] as? String
+                ?? "group.tech.onlytrueperspective.weatheros"
+            UserDefaults(suiteName: appGroup)?.set(jsonPayload, forKey: "weather_payload")
+            WidgetCenter.shared.reloadAllTimelines()
+
+            if WCSession.isSupported() {
+                do {
+                    try WCSession.default.updateApplicationContext([
+                        "jsonPayload": jsonPayload
+                    ])
+                } catch {
+                    // Widgets are still updated through the App Group even if
+                    // Apple Watch connectivity is unavailable at this moment.
                 }
             }
             result(nil)
@@ -392,5 +427,4 @@ public class PassThroughView: UIView {
         return hit
     }
 }
-
 

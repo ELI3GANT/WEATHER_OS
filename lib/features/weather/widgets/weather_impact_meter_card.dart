@@ -15,7 +15,7 @@ class WeatherImpactMeterCard extends StatelessWidget {
   Color _scoreColor(int score) {
     if (score >= 70) return const Color(0xFFFF5252);
     if (score >= 35) return const Color(0xFFFFB300);
-    return const Color(0xFF69F0AE);
+    return WeatherPalette.success;
   }
 
   IconData _impactIcon(String activity) {

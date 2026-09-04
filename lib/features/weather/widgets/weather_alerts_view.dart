@@ -41,12 +41,12 @@ class WeatherAlertsView extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: hasAlerts
                       ? const Color(0xFFFF5252).withValues(alpha: 0.15)
-                      : const Color(0xFF69F0AE).withValues(alpha: 0.15),
+                      : WeatherPalette.success.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(WeatherRadii.pill),
                   border: Border.all(
                     color: hasAlerts
                         ? const Color(0xFFFF5252).withValues(alpha: 0.4)
-                        : const Color(0xFF69F0AE).withValues(alpha: 0.4),
+                        : WeatherPalette.success.withValues(alpha: 0.4),
                     width: 1,
                   ),
                 ),
@@ -60,7 +60,7 @@ class WeatherAlertsView extends StatelessWidget {
                       size: 12,
                       color: hasAlerts
                           ? const Color(0xFFFF5252)
-                          : const Color(0xFF69F0AE),
+                          : WeatherPalette.success,
                     ),
                     const SizedBox(width: 4),
                     Text(
@@ -72,7 +72,7 @@ class WeatherAlertsView extends StatelessWidget {
                         fontWeight: FontWeight.w800,
                         color: hasAlerts
                             ? const Color(0xFFFF5252)
-                            : const Color(0xFF69F0AE),
+                            : WeatherPalette.success,
                       ),
                     ),
                   ],
@@ -92,17 +92,17 @@ class WeatherAlertsView extends StatelessWidget {
                     width: 56,
                     height: 56,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF69F0AE).withValues(alpha: 0.12),
+                      color: WeatherPalette.success.withValues(alpha: 0.12),
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: const Color(0xFF69F0AE).withValues(alpha: 0.35),
+                        color: WeatherPalette.success.withValues(alpha: 0.35),
                         width: 1.5,
                       ),
                     ),
                     child: Center(
                       child: Icon(
                         WeatherPlatformIcons.shield(context),
-                        color: const Color(0xFF69F0AE),
+                        color: WeatherPalette.success,
                         size: 28,
                       ),
                     ),
@@ -152,7 +152,7 @@ class WeatherAlertsView extends StatelessWidget {
                       _buildMetricSummary(
                         'UV INDEX',
                         '${weather?.uvIndex ?? 0}',
-                        const Color(0xFF69F0AE),
+                        WeatherPalette.success,
                       ),
                     ],
                   ),

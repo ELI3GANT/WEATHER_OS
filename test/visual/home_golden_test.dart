@@ -108,6 +108,29 @@ void main() {
     });
   }
 
+  testWidgets('compact Android navigation keeps every tab usable', (
+    WidgetTester tester,
+  ) async {
+    await _pumpHome(
+      tester,
+      size: const Size(360, 800),
+      disableAnimations: true,
+      platform: TargetPlatform.android,
+    );
+
+    for (final label in <String>[
+      'Hourly',
+      'Daily',
+      'Radar',
+      'Alerts',
+      'Today',
+    ]) {
+      await tester.tap(find.text(label).last);
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull, reason: 'tab $label');
+    }
+  });
+
   testWidgets('short home scroll keeps metrics reachable', (
     WidgetTester tester,
   ) async {

@@ -18,11 +18,11 @@ class WeatherOsAppScrollBehavior extends MaterialScrollBehavior {
 
   @override
   Set<PointerDeviceKind> get dragDevices => const <PointerDeviceKind>{
-        PointerDeviceKind.touch,
-        PointerDeviceKind.mouse,
-        PointerDeviceKind.trackpad,
-        PointerDeviceKind.stylus,
-      };
+    PointerDeviceKind.touch,
+    PointerDeviceKind.mouse,
+    PointerDeviceKind.trackpad,
+    PointerDeviceKind.stylus,
+  };
 }
 
 class WeatherOsApp extends StatefulWidget {
@@ -42,11 +42,17 @@ class WeatherOsApp extends StatefulWidget {
 }
 
 class _WeatherOsAppState extends State<WeatherOsApp> {
-  late final WeatherProvider _provider = WeatherProvider(
-    repository: WeatherRepository(service: widget.weatherService),
-    locationService: widget.locationService,
-    cacheService: widget.cacheService,
-  )..load();
+  late final WeatherProvider _provider;
+
+  @override
+  void initState() {
+    super.initState();
+    _provider = WeatherProvider(
+      repository: WeatherRepository(service: widget.weatherService),
+      locationService: widget.locationService,
+      cacheService: widget.cacheService,
+    )..load();
+  }
 
   @override
   void dispose() {
@@ -56,8 +62,8 @@ class _WeatherOsAppState extends State<WeatherOsApp> {
 
   @override
   Widget build(BuildContext context) {
-    return WeatherScope(
-      provider: _provider,
+    return ListenableBuilder(
+      listenable: _provider,
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         title: AppConstants.appName,
@@ -66,6 +72,12 @@ class _WeatherOsAppState extends State<WeatherOsApp> {
         initialRoute: AppRoutes.home,
         onGenerateRoute: AppRoutes.onGenerateRoute,
       ),
+      builder: (context, child) {
+        return WeatherScope(
+          provider: _provider,
+          child: child!,
+        );
+      },
     );
   }
 }

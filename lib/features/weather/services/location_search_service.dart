@@ -16,23 +16,38 @@ class LocationSearchService {
     final closeClient = client == null;
     try {
       final uri = Uri.parse('https://geocoding-api.open-meteo.com/v1/search')
-          .replace(queryParameters: <String, String>{
-        'name': trimmed,
-        'count': '1',
-        'language': 'en',
-        'format': 'json',
-      });
-      final response = await httpClient.get(uri).timeout(const Duration(seconds: 8));
+          .replace(
+            queryParameters: <String, String>{
+              'name': trimmed,
+              'count': '1',
+              'language': 'en',
+              'format': 'json',
+            },
+          );
+      final response = await httpClient
+          .get(uri)
+          .timeout(const Duration(seconds: 8));
       if (response.statusCode != 200) return null;
       final decoded = jsonDecode(response.body);
       final results = decoded is Map<String, dynamic>
           ? decoded['results']
           : null;
-      if (results is! List || results.isEmpty || results.first is! Map) return null;
+      if (results is! List || results.isEmpty || results.first is! Map) {
+        return null;
+      }
       final result = results.first as Map;
       final latitude = (result['latitude'] as num?)?.toDouble();
       final longitude = (result['longitude'] as num?)?.toDouble();
-      if (latitude == null || longitude == null) return null;
+      if (latitude == null ||
+          longitude == null ||
+          !latitude.isFinite ||
+          !longitude.isFinite ||
+          latitude < -90 ||
+          latitude > 90 ||
+          longitude < -180 ||
+          longitude > 180) {
+        return null;
+      }
       final name = (result['name'] as String?)?.trim() ?? trimmed;
       final admin = (result['admin1'] as String?)?.trim();
       final country = (result['country_code'] as String?)?.trim();

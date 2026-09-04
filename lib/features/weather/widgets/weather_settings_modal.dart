@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../../app/theme/weather_tokens.dart';
@@ -7,7 +8,10 @@ import '../../../core/platform_ui/weather_platform_button.dart';
 import '../../../core/platform_ui/weather_platform_card.dart';
 import '../../../core/platform_ui/weather_platform_feedback.dart';
 import '../../../core/platform_ui/weather_platform_icons.dart';
+import '../../../core/platform_ui/weather_platform_switch.dart';
 import '../services/support_entitlement_service.dart';
+import '../services/watch_export_service.dart';
+import '../services/weather_preferences_service.dart';
 
 class WeatherSettingsModal extends StatefulWidget {
   const WeatherSettingsModal({required this.onRefresh, this.onChangeLocation, super.key});
@@ -167,7 +171,7 @@ class _WeatherSettingsModalState extends State<WeatherSettingsModal> {
                     Icon(
                       WeatherPlatformIcons.shield(context),
                       size: 24,
-                      color: const Color(0xFF69F0AE),
+                      color: WeatherPalette.success,
                     ),
                     const SizedBox(width: WeatherSpacing.space3),
                     Expanded(
@@ -178,7 +182,7 @@ class _WeatherSettingsModalState extends State<WeatherSettingsModal> {
                             'PROUDLY 100% AD-FREE & PRIVATE',
                             style: WeatherType.overline.copyWith(
                               fontSize: 9,
-                              color: const Color(0xFF69F0AE),
+                              color: WeatherPalette.success,
                               fontWeight: FontWeight.w800,
                             ),
                           ),
@@ -310,12 +314,87 @@ class _WeatherSettingsModalState extends State<WeatherSettingsModal> {
               ),
               const SizedBox(height: WeatherSpacing.space3),
 
+              // Doppler Radar Tab Visibility Toggle
+              AnimatedBuilder(
+                animation: WeatherPreferencesService.instance,
+                builder: (BuildContext context, Widget? child) {
+                  final showRadar = WeatherPreferencesService.instance.showRadarTab;
+                  return WeatherPlatformCard(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: WeatherSpacing.space3,
+                      vertical: WeatherSpacing.space2,
+                    ),
+                    child: Row(
+                      children: <Widget>[
+                        Icon(
+                          WeatherPlatformIcons.radar(context),
+                          size: 22,
+                          color: WeatherPalette.mistBlue,
+                        ),
+                        const SizedBox(width: WeatherSpacing.space3),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              Text(
+                                'DOPPLER RADAR TAB',
+                                style: WeatherType.overline.copyWith(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Display live precipitation radar on navigation bar',
+                                style: WeatherType.body.copyWith(
+                                  fontSize: 11,
+                                  color: WeatherPalette.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        WeatherPlatformSwitch(
+                          value: showRadar,
+                          onChanged: (bool next) {
+                            WeatherPreferencesService.instance.setShowRadarTab(next);
+                          },
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: WeatherSpacing.space3),
+
               if (widget.onChangeLocation != null) ...<Widget>[
                 WeatherPlatformButton(
                   icon: Icon(WeatherPlatformIcons.location(context)),
                   variant: WeatherButtonVariant.outlined,
                   onPressed: widget.onChangeLocation,
                   child: const Text('Change Location / ZIP Code'),
+                ),
+                const SizedBox(height: WeatherSpacing.space2),
+              ],
+
+              if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) ...<Widget>[
+                WeatherPlatformButton(
+                  icon: const Icon(Icons.widgets_outlined),
+                  variant: WeatherButtonVariant.outlined,
+                  onPressed: () async {
+                    final pinned = await WatchExportService.pinAndroidWidget();
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          pinned
+                              ? 'Adding WeatherOS widget to your Home Screen...'
+                              : 'To add widget: Long press your home screen and choose WeatherOS',
+                        ),
+                      ),
+                    );
+                  },
+                  child: const Text('Add Home Screen Widget'),
                 ),
                 const SizedBox(height: WeatherSpacing.space2),
               ],
@@ -422,7 +501,7 @@ class _SupportUnlockButton extends StatelessWidget {
                 fontSize: 10,
                 fontWeight: FontWeight.w800,
                 color: isOwned
-                    ? const Color(0xFF69F0AE)
+                    ? WeatherPalette.success
                     : WeatherPalette.horizonAmber,
               ),
             ),

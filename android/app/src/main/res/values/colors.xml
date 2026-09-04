@@ -1,10 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="canvasDeep">#060B12</color>
-    <color name="widgetCardBackground">#141C28</color>
-    <color name="widgetBorder">#2E3E56</color>
-    <color name="widgetTextPrimary">#F0F4F8</color>
-    <color name="widgetTextSecondary">#8CA0BA</color>
-    <color name="widgetTextMuted">#6E8098</color>
+    <color name="widgetCardBackground">#101A26</color>
+    <color name="widgetBorder">#25374C</color>
+    <color name="widgetPillBackground">#182637</color>
+    <color name="widgetPillBorder">#2F445F</color>
+    <color name="widgetTextPrimary">#F6FAFF</color>
+    <color name="widgetTextSecondary">#9BB0C7</color>
+    <color name="widgetTextMuted">#657990</color>
     <color name="widgetAccent">#38BDF8</color>
+    <color name="widgetAmber">#F59E0B</color>
+    <color name="widgetPurple">#C084FC</color>
+    <color name="widgetIce">#BAE6FD</color>
+    <color name="widgetSuccess">#64DDAE</color>
 </resources>

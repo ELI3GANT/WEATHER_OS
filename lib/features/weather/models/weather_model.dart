@@ -123,33 +123,48 @@ class WeatherModel {
         (daily['sunset'] as List<dynamic>?)?.cast<String>();
 
     final high = (dailyMaxList != null && dailyMaxList.isNotEmpty)
-        ? dailyMaxList.first.toDouble()
+        ? (dailyMaxList.first.toDouble().isFinite ? dailyMaxList.first.toDouble() : temp + 4)
         : temp + 4;
     final low = (dailyMinList != null && dailyMinList.isNotEmpty)
-        ? dailyMinList.first.toDouble()
+        ? (dailyMinList.first.toDouble().isFinite ? dailyMinList.first.toDouble() : temp - 6)
         : temp - 6;
     final uvIndex = (dailyUvList != null && dailyUvList.isNotEmpty)
         ? dailyUvList.first.round()
         : 3;
-    final totalRain = (dailyRainList != null && dailyRainList.isNotEmpty)
+    final rawDailyRain = (dailyRainList != null && dailyRainList.isNotEmpty)
         ? dailyRainList.first.toDouble() * 0.03937 // mm to inches
         : 0.80;
+    final totalRain = rawDailyRain.isFinite ? rawDailyRain : 0.80;
     final precipProb = (dailyPrecipProbList != null && dailyPrecipProbList.isNotEmpty)
-        ? dailyPrecipProbList.first.round()
+        ? dailyPrecipProbList.first.round().clamp(0, 100)
         : 90;
 
     var sunriseStr = '5:36 AM';
     var sunsetStr = '8:08 PM';
+    DateTime? parsedSunrise;
+    DateTime? parsedSunset;
     if (dailySunriseList != null && dailySunriseList.isNotEmpty) {
       final s = DateTime.tryParse(dailySunriseList.first);
       if (s != null) {
+        parsedSunrise = s;
         sunriseStr = _formatTime(s.hour, s.minute);
       }
     }
     if (dailySunsetList != null && dailySunsetList.isNotEmpty) {
       final s = DateTime.tryParse(dailySunsetList.first);
       if (s != null) {
+        parsedSunset = s;
         sunsetStr = _formatTime(s.hour, s.minute);
+      }
+    }
+
+    String computedDaylight = '14h 32m';
+    if (parsedSunrise != null && parsedSunset != null) {
+      final diff = parsedSunset.difference(parsedSunrise);
+      if (!diff.isNegative && diff.inMinutes > 0) {
+        final hours = diff.inHours;
+        final minutes = diff.inMinutes.remainder(60);
+        computedDaylight = '${hours}h ${minutes}m';
       }
     }
 
@@ -295,7 +310,8 @@ class WeatherModel {
             low: dLow,
             precipChance: dPrecip,
             uvIndex: dUv,
-            totalRainInches: double.parse(dRain.toStringAsFixed(2)),
+            totalRainInches:
+                double.tryParse(dRain.isFinite ? dRain.toStringAsFixed(2) : '0.0') ?? 0.0,
             sunrise: dSunrise,
             sunset: dSunset,
           ),
@@ -338,15 +354,15 @@ class WeatherModel {
       humidity: humidity,
       windSpeedMph: windSpeed,
       uvIndex: uvIndex,
-      pressureInHg: double.parse(pressureInHg.toStringAsFixed(2)),
+      pressureInHg: double.tryParse(pressureInHg.toStringAsFixed(2)) ?? 30.0,
       precipChance: precipProb,
-      totalRainInches: double.parse(totalRain.toStringAsFixed(2)),
+      totalRainInches: double.tryParse(totalRain.toStringAsFixed(2)) ?? 0.0,
       visibilityMiles: 8.0,
       windDirectionCompass: _degreesToCompass(windDirection),
       windBearingDegrees: windDirection,
       sunriseTime: sunriseStr,
       sunsetTime: sunsetStr,
-      daylightDuration: '14h 32m',
+      daylightDuration: computedDaylight,
       dailySummary: summary,
       riskLevel: risk,
       severeRisks: <String, double>{

@@ -41,10 +41,13 @@ class WeatherWidgetProvider : AppWidgetProvider() {
 
         views.setTextViewText(R.id.widget_location, "WeatherOS")
         views.setTextViewText(R.id.widget_glyph, "◌")
+        views.setTextViewText(R.id.widget_condition, "Offline")
         views.setTextViewText(R.id.widget_temperature, "—")
-        views.setTextViewText(R.id.widget_condition, "Waiting for weather sync")
-        views.setTextViewText(R.id.widget_high_low, "Open WeatherOS to sync")
-        views.setTextViewText(R.id.widget_updated, "Waiting for first sync")
+        views.setTextViewText(R.id.widget_feels_like, "Open app to sync")
+        views.setTextViewText(R.id.widget_high_low, "H —   L —")
+        views.setTextViewText(R.id.widget_metrics, "☂ —   ༄ —")
+        views.setTextViewText(R.id.widget_risk, "● LOW RISK")
+        views.setTextViewText(R.id.widget_updated, "Waiting for sync")
 
         // Read cached weather from Flutter shared preferences
         try {
@@ -54,32 +57,61 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                 val json = JSONObject(jsonString)
                 val location = json.optString("location", "Woonsocket, RI")
                 val temp = json.optDouble("temperature", 71.0).toInt()
-                val condition = json.optString("condition", "rain").replaceFirstChar { it.uppercase() }
+                val conditionRaw = json.optString("condition", "rain")
+                val condition = conditionRaw.replaceFirstChar { it.uppercase() }
                 val feelsLike = json.optDouble("feelsLike", 69.0).toInt()
                 val high = json.optDouble("high", 72.0).toInt()
                 val low = json.optDouble("low", 62.0).toInt()
+                val precip = json.optInt("precipChance", 0)
+                val wind = json.optDouble("windSpeedMph", 0.0).toInt()
+                val riskLevel = json.optString("riskLevel", "LOW RISK").uppercase()
 
                 views.setTextViewText(R.id.widget_location, location)
-                views.setTextViewText(R.id.widget_glyph, weatherGlyph(condition))
+                views.setTextViewText(R.id.widget_glyph, weatherGlyph(conditionRaw))
+                views.setTextViewText(R.id.widget_condition, condition)
                 views.setTextViewText(R.id.widget_temperature, "$temp°")
-                views.setTextViewText(R.id.widget_condition, "$condition • Feels like $feelsLike°")
-                views.setTextViewText(R.id.widget_high_low, "H $high°   L $low°")
-                val updatedAt = json.optLong("timestamp", 0L)
+                views.setTextViewText(R.id.widget_feels_like, "Feels like $feelsLike°")
+                views.setTextViewText(R.id.widget_high_low, "H $high°  L $low°")
+                views.setTextViewText(R.id.widget_metrics, "☂ $precip%   ༄ ${wind}mph")
+                views.setTextViewText(R.id.widget_risk, "● $riskLevel")
+
+                // Condition-aware accent tinting
+                val glyphColor = when {
+                    conditionRaw.contains("storm") || conditionRaw.contains("thunder") -> 0xFFE040FB.toInt()
+                    conditionRaw.contains("snow") || conditionRaw.contains("sleet") -> 0xFFB8D9FF.toInt()
+                    conditionRaw.contains("rain") || conditionRaw.contains("drizzle") -> 0xFF38BDF8.toInt()
+                    conditionRaw.contains("clear") || conditionRaw.contains("sun") -> 0xFFFFB84D.toInt()
+                    else -> 0xFF9BB0C7.toInt()
+                }
+                views.setTextColor(R.id.widget_glyph, glyphColor)
+
+                // Risk level tinting
+                val riskColor = when {
+                    riskLevel.contains("HIGH") || riskLevel.contains("SEVERE") -> 0xFFFF5252.toInt()
+                    riskLevel.contains("MODERATE") || riskLevel.contains("ELEVATED") -> 0xFFFFB300.toInt()
+                    else -> 0xFF64DDAE.toInt()
+                }
+                views.setTextColor(R.id.widget_risk, riskColor)
+
+                var updatedAt = json.optLong("timestamp", 0L)
+                if (updatedAt == 0L) {
+                    updatedAt = prefs.getLong("flutter.weatheros_cached_timestamp", 0L)
+                }
                 val ageMinutes = if (updatedAt > 0L) {
                     ((System.currentTimeMillis() - updatedAt).coerceAtLeast(0L) / 60_000L)
                 } else -1L
                 views.setTextViewText(
                     R.id.widget_updated,
                     when {
-                        ageMinutes < 0L -> "Waiting for first sync"
-                        ageMinutes == 0L -> "Updated just now"
-                        else -> "Updated ${ageMinutes}m ago"
+                        ageMinutes < 0L -> "Waiting for sync"
+                        ageMinutes == 0L -> "Synced now"
+                        else -> "${ageMinutes}m ago"
                     }
                 )
             }
         } catch (_: Exception) {
-            views.setTextViewText(R.id.widget_condition, "Weather sync unavailable")
-            views.setTextViewText(R.id.widget_updated, "Open WeatherOS to retry")
+            views.setTextViewText(R.id.widget_condition, "Unavailable")
+            views.setTextViewText(R.id.widget_updated, "Open app to retry")
         }
 
         // Click to launch main app

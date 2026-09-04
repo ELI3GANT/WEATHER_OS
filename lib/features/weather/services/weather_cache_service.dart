@@ -30,9 +30,11 @@ class WeatherCacheService {
   Future<void> saveWeather(WeatherModel weather) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final encoded = jsonEncode(weather.toJson());
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final jsonMap = weather.toJson()..['timestamp'] = now;
+      final encoded = jsonEncode(jsonMap);
       await prefs.setString(_keyCachedWeather, encoded);
-      await prefs.setInt(_keyCachedTimestamp, DateTime.now().millisecondsSinceEpoch);
+      await prefs.setInt(_keyCachedTimestamp, now);
     } on Object {
       // Graceful fallback
     }

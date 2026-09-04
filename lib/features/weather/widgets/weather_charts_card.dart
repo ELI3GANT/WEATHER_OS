@@ -19,7 +19,8 @@ class WeatherChartsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
-        final isWide = constraints.maxWidth >= 700;
+        final isWide = constraints.maxWidth >= 850;
+
         final tempCard = WeatherPlatformCard(
           padding: const EdgeInsets.all(WeatherSpacing.space4),
           child: Column(
@@ -36,7 +37,7 @@ class WeatherChartsCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  const SizedBox(width: 4),
+                  const SizedBox(width: 8),
                   Flexible(
                     child: Text(
                       'High ${weather.high.round()}° • Low ${weather.low.round()}°',
@@ -79,12 +80,12 @@ class WeatherChartsCard extends StatelessWidget {
                 children: <Widget>[
                   Flexible(
                     child: Text(
-                      'PRECIPITATION CHANCE',
+                      'PRECIPITATION',
                       style: WeatherType.overline,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  const SizedBox(width: 4),
+                  const SizedBox(width: 8),
                   Flexible(
                     child: Text(
                       'Peak ${weather.precipChance}%',

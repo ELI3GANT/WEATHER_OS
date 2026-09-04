@@ -1,4 +1,5 @@
 import 'dart:ui';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -15,24 +16,31 @@ class WeatherPlatformNavigationBar extends StatelessWidget {
     required this.currentTab,
     required this.onTabSelected,
     this.alertCount = 0,
+    this.showRadar = true,
     super.key,
   });
 
   final WeatherNavTab currentTab;
   final ValueChanged<WeatherNavTab> onTabSelected;
   final int alertCount;
+  final bool showRadar;
 
   @override
   Widget build(BuildContext context) {
     final isIOS = WeatherPlatform.isIOS(context);
+    final availableTabs = WeatherNavTab.values
+        .where((tab) => showRadar || tab != WeatherNavTab.radar)
+        .toList();
+    final selectedIndex = availableTabs.indexOf(currentTab);
+    final safeSelectedIndex = selectedIndex >= 0 ? selectedIndex : 0;
 
     // If native SwiftUI bridge is actively hosting chrome on iOS, do not render duplicate Flutter tab bar
     if (isIOS && WeatherNativeUIBridge.instance.isNativeBridgeAvailable) {
       // Synchronize confirmed state to native SwiftUI chrome
       WeatherNativeUIBridge.instance.updateNavigationState(
         NavigationState(
-          selectedTab: currentTab.index,
-          tabCount: WeatherNavTab.values.length,
+          selectedTab: safeSelectedIndex,
+          tabCount: availableTabs.length,
           alertCount: alertCount,
         ),
       );
@@ -62,7 +70,7 @@ class WeatherPlatformNavigationBar extends StatelessWidget {
                   horizontal: WeatherSpacing.space2,
                 ),
                 child: Row(
-                  children: WeatherNavTab.values.map((WeatherNavTab tab) {
+                  children: availableTabs.map((WeatherNavTab tab) {
                     final isSelected = tab == currentTab;
                     return Expanded(
                       child: CupertinoButton(
@@ -74,7 +82,9 @@ class WeatherPlatformNavigationBar extends StatelessWidget {
                         child: _IOSNavItem(
                           tab: tab,
                           isSelected: isSelected,
-                          alertCount: tab == WeatherNavTab.alerts ? alertCount : 0,
+                          alertCount: tab == WeatherNavTab.alerts
+                              ? alertCount
+                              : 0,
                         ),
                       ),
                     );
@@ -92,79 +102,84 @@ class WeatherPlatformNavigationBar extends StatelessWidget {
       data: NavigationBarThemeData(
         backgroundColor: WeatherPalette.canvasDeep.withValues(alpha: 0.95),
         indicatorColor: WeatherPalette.mistBlue.withValues(alpha: 0.2),
-        labelTextStyle: WidgetStateProperty.resolveWith<TextStyle>(
-          (Set<WidgetState> states) {
-            if (states.contains(WidgetState.selected)) {
-              return WeatherType.label.copyWith(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: WeatherPalette.mistBlue,
-              );
-            }
+        labelTextStyle: WidgetStateProperty.resolveWith<TextStyle>((
+          Set<WidgetState> states,
+        ) {
+          if (states.contains(WidgetState.selected)) {
             return WeatherType.label.copyWith(
               fontSize: 11,
-              color: WeatherPalette.textTertiary,
+              fontWeight: FontWeight.w700,
+              color: WeatherPalette.mistBlue,
             );
-          },
-        ),
-        iconTheme: WidgetStateProperty.resolveWith<IconThemeData>(
-          (Set<WidgetState> states) {
-            if (states.contains(WidgetState.selected)) {
-              return const IconThemeData(
-                color: WeatherPalette.mistBlue,
-                size: 24,
-              );
-            }
+          }
+          return WeatherType.label.copyWith(
+            fontSize: 11,
+            color: WeatherPalette.textTertiary,
+          );
+        }),
+        iconTheme: WidgetStateProperty.resolveWith<IconThemeData>((
+          Set<WidgetState> states,
+        ) {
+          if (states.contains(WidgetState.selected)) {
             return const IconThemeData(
-              color: WeatherPalette.textTertiary,
+              color: WeatherPalette.mistBlue,
               size: 24,
             );
-          },
-        ),
+          }
+          return const IconThemeData(
+            color: WeatherPalette.textTertiary,
+            size: 24,
+          );
+        }),
       ),
-      child: NavigationBar(
-        selectedIndex: currentTab.index,
-        onDestinationSelected: (int index) {
-          WeatherPlatformFeedback.selection(context);
-          onTabSelected(WeatherNavTab.values[index]);
-        },
-        destinations: <NavigationDestination>[
-          NavigationDestination(
-            icon: Icon(WeatherPlatformIcons.todayOutlined(context)),
-            selectedIcon: Icon(WeatherPlatformIcons.today(context)),
-            label: 'Today',
-          ),
-          NavigationDestination(
-            icon: Icon(WeatherPlatformIcons.hourlyOutlined(context)),
-            selectedIcon: Icon(WeatherPlatformIcons.hourly(context)),
-            label: 'Hourly',
-          ),
-          NavigationDestination(
-            icon: Icon(WeatherPlatformIcons.dailyOutlined(context)),
-            selectedIcon: Icon(WeatherPlatformIcons.daily(context)),
-            label: 'Daily',
-          ),
-          NavigationDestination(
-            icon: Icon(WeatherPlatformIcons.radarOutlined(context)),
-            selectedIcon: Icon(WeatherPlatformIcons.radar(context)),
-            label: 'Radar',
-          ),
-          NavigationDestination(
-            icon: Badge(
-              isLabelVisible: alertCount > 0,
-              label: Text('$alertCount'),
-              backgroundColor: const Color(0xFFFF5252),
-              child: Icon(WeatherPlatformIcons.alertsOutlined(context)),
-            ),
-            selectedIcon: Badge(
-              isLabelVisible: alertCount > 0,
-              label: Text('$alertCount'),
-              backgroundColor: const Color(0xFFFF5252),
-              child: Icon(WeatherPlatformIcons.alerts(context)),
-            ),
-            label: 'Alerts',
-          ),
-        ],
+      child: SafeArea(
+        top: false,
+        child: NavigationBar(
+          selectedIndex: safeSelectedIndex,
+          onDestinationSelected: (int index) {
+            WeatherPlatformFeedback.selection(context);
+            onTabSelected(availableTabs[index]);
+          },
+          destinations: availableTabs.map((WeatherNavTab tab) {
+            return switch (tab) {
+              WeatherNavTab.today => NavigationDestination(
+                icon: Icon(WeatherPlatformIcons.todayOutlined(context)),
+                selectedIcon: Icon(WeatherPlatformIcons.today(context)),
+                label: 'Today',
+              ),
+              WeatherNavTab.hourly => NavigationDestination(
+                icon: Icon(WeatherPlatformIcons.hourlyOutlined(context)),
+                selectedIcon: Icon(WeatherPlatformIcons.hourly(context)),
+                label: 'Hourly',
+              ),
+              WeatherNavTab.daily => NavigationDestination(
+                icon: Icon(WeatherPlatformIcons.dailyOutlined(context)),
+                selectedIcon: Icon(WeatherPlatformIcons.daily(context)),
+                label: 'Daily',
+              ),
+              WeatherNavTab.radar => NavigationDestination(
+                icon: Icon(WeatherPlatformIcons.radarOutlined(context)),
+                selectedIcon: Icon(WeatherPlatformIcons.radar(context)),
+                label: 'Radar',
+              ),
+              WeatherNavTab.alerts => NavigationDestination(
+                icon: Badge(
+                  isLabelVisible: alertCount > 0,
+                  label: Text('$alertCount'),
+                  backgroundColor: const Color(0xFFFF5252),
+                  child: Icon(WeatherPlatformIcons.alertsOutlined(context)),
+                ),
+                selectedIcon: Badge(
+                  isLabelVisible: alertCount > 0,
+                  label: Text('$alertCount'),
+                  backgroundColor: const Color(0xFFFF5252),
+                  child: Icon(WeatherPlatformIcons.alerts(context)),
+                ),
+                label: 'Alerts',
+              ),
+            };
+          }).toList(),
+        ),
       ),
     );
   }
@@ -183,21 +198,26 @@ class _IOSNavItem extends StatelessWidget {
 
   IconData _iconForTab(BuildContext context) {
     return switch (tab) {
-      WeatherNavTab.today => isSelected
-          ? WeatherPlatformIcons.today(context)
-          : WeatherPlatformIcons.todayOutlined(context),
-      WeatherNavTab.hourly => isSelected
-          ? WeatherPlatformIcons.hourly(context)
-          : WeatherPlatformIcons.hourlyOutlined(context),
-      WeatherNavTab.daily => isSelected
-          ? WeatherPlatformIcons.daily(context)
-          : WeatherPlatformIcons.dailyOutlined(context),
-      WeatherNavTab.radar => isSelected
-          ? WeatherPlatformIcons.radar(context)
-          : WeatherPlatformIcons.radarOutlined(context),
-      WeatherNavTab.alerts => isSelected
-          ? WeatherPlatformIcons.alerts(context)
-          : WeatherPlatformIcons.alertsOutlined(context),
+      WeatherNavTab.today =>
+        isSelected
+            ? WeatherPlatformIcons.today(context)
+            : WeatherPlatformIcons.todayOutlined(context),
+      WeatherNavTab.hourly =>
+        isSelected
+            ? WeatherPlatformIcons.hourly(context)
+            : WeatherPlatformIcons.hourlyOutlined(context),
+      WeatherNavTab.daily =>
+        isSelected
+            ? WeatherPlatformIcons.daily(context)
+            : WeatherPlatformIcons.dailyOutlined(context),
+      WeatherNavTab.radar =>
+        isSelected
+            ? WeatherPlatformIcons.radar(context)
+            : WeatherPlatformIcons.radarOutlined(context),
+      WeatherNavTab.alerts =>
+        isSelected
+            ? WeatherPlatformIcons.alerts(context)
+            : WeatherPlatformIcons.alertsOutlined(context),
     };
   }
 
@@ -213,8 +233,9 @@ class _IOSNavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final activeColor =
-        isSelected ? WeatherPalette.mistBlue : WeatherPalette.textTertiary;
+    final activeColor = isSelected
+        ? WeatherPalette.mistBlue
+        : WeatherPalette.textTertiary;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -233,8 +254,10 @@ class _IOSNavItem extends StatelessWidget {
                     color: Color(0xFFFF5252),
                     shape: BoxShape.circle,
                   ),
-                  constraints:
-                      const BoxConstraints(minWidth: 14, minHeight: 14),
+                  constraints: const BoxConstraints(
+                    minWidth: 14,
+                    minHeight: 14,
+                  ),
                   child: Text(
                     '$alertCount',
                     textAlign: TextAlign.center,

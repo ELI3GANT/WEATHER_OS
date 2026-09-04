@@ -7,9 +7,12 @@ import 'features/weather/screens/weather_showcase_screen.dart';
 import 'features/weather/services/geolocator_location_service.dart';
 import 'features/weather/services/open_meteo_weather_service.dart';
 
+import 'features/weather/services/weather_preferences_service.dart';
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SystemUiService.configure();
+  await WeatherPreferencesService.instance.initialize();
   runApp(
     const WeatherOsApp(
       weatherService: OpenMeteoWeatherService(),
