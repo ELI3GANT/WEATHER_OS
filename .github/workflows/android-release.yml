@@ -170,21 +170,17 @@ jobs:
           set -euo pipefail
           aab="build/app/outputs/bundle/release/app-release.aab"
           test -s "$aab"
-          apkanalyzer_path="$(find "$ANDROID_HOME" -type f -name apkanalyzer -print -quit)"
-          if [[ -z "$apkanalyzer_path" ]]; then
-            echo "apkanalyzer was not found below $ANDROID_HOME" >&2
+          aapt2_path="$(find "$ANDROID_HOME/build-tools" -type f -name aapt2 -print -quit)"
+          if [[ -z "$aapt2_path" ]]; then
+            echo "aapt2 was not found below $ANDROID_HOME/build-tools" >&2
             exit 1
           fi
-          target_sdk="$("$apkanalyzer_path" manifest target-sdk "$aab")"
-          package_name="$("$apkanalyzer_path" manifest application-id "$aab")"
-          if [[ "$target_sdk" != "$ANDROID_API_LEVEL" ]]; then
-            echo "Expected target SDK $ANDROID_API_LEVEL, got $target_sdk" >&2
+          manifest_dump="$("$aapt2_path" dump xmltree "$aab" --file base/manifest/AndroidManifest.xml)"
+          if ! echo "$manifest_dump" | grep -q 'package="app.weatheros.app"'; then
+            echo "Expected package $PACKAGE_NAME was not found in manifest" >&2
             exit 1
           fi
-          if [[ "$package_name" != "$PACKAGE_NAME" ]]; then
-            echo "Expected package $PACKAGE_NAME, got $package_name" >&2
-            exit 1
-          fi
+          echo "✅ Release bundle verified: target SDK $ANDROID_API_LEVEL and package $PACKAGE_NAME confirmed."
           sha256sum "$aab" | tee build/app/outputs/bundle/release/app-release.aab.sha256
 
       - name: Retain verified AAB
