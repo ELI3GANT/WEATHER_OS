@@ -1,0 +1,5 @@
+#include? "Pods/Target Support Files/Pods-Runner/Pods-Runner.beta.xcconfig"
+#include "Generated.xcconfig"
+
+// TestFlight beta uses the same release-mode Flutter source as production.
+FLUTTER_BUILD_MODE=release

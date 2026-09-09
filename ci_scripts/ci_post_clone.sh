@@ -10,10 +10,11 @@ export PATH="/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/
 echo "=== System Architecture: $(uname -m) ==="
 echo "=== Current Working Directory: $(pwd) ==="
 
-# 1. Install Flutter (stable)
+# 1. Install the repository's pinned Flutter SDK.
+FLUTTER_VERSION="3.47.2"
 if [ ! -d "$HOME/flutter" ]; then
     echo "=== Cloning Flutter SDK ==="
-    git clone https://github.com/flutter/flutter.git --depth 1 -b stable "$HOME/flutter"
+    git clone https://github.com/flutter/flutter.git --depth 1 -b "$FLUTTER_VERSION" "$HOME/flutter"
 fi
 
 export FLUTTER_ROOT="$HOME/flutter"
@@ -46,7 +47,12 @@ echo "=== Running flutter pub get ==="
 flutter pub get
 
 echo "=== Building Flutter iOS Release Assets ==="
-flutter build ios --release --no-codesign
+if [ "${WEATHEROS_BETA_BUILD:-0}" = "1" ]; then
+    : "${CI_BUILD_NUMBER:?Xcode Cloud must supply CI_BUILD_NUMBER for beta builds}"
+    flutter build ios --release --no-codesign --build-number "$CI_BUILD_NUMBER"
+else
+    flutter build ios --release --no-codesign
+fi
 
 # 5. Check and install CocoaPods
 echo "=== Checking CocoaPods ==="

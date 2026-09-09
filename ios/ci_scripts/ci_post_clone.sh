@@ -47,7 +47,12 @@ echo "=== Running flutter pub get ==="
 flutter pub get
 
 echo "=== Building Flutter iOS Release Assets ==="
-flutter build ios --release --no-codesign
+if [ "${WEATHEROS_BETA_BUILD:-0}" = "1" ]; then
+    : "${CI_BUILD_NUMBER:?Xcode Cloud must supply CI_BUILD_NUMBER for beta builds}"
+    flutter build ios --release --no-codesign --build-number "$CI_BUILD_NUMBER"
+else
+    flutter build ios --release --no-codesign
+fi
 
 # 5. Check and install CocoaPods
 echo "=== Checking CocoaPods ==="
