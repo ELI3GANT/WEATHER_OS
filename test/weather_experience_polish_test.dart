@@ -217,5 +217,26 @@ void main() {
       expect(find.textContaining('thunderstorm'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
+
+    testWidgets('CurrentConditionsHero labels an hourly selection as a forecast', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: WeatherTheme.dark,
+          home: Scaffold(
+            body: CurrentConditionsHero(
+              weather: ConditionFixtures.clearDay,
+              forecastTimeLabel: '3 PM',
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Forecast for 3 PM'), findsOneWidget);
+      expect(find.textContaining('Feels like'), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
   });
 }

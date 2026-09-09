@@ -474,6 +474,8 @@ class _TodayDashboardView extends StatelessWidget {
         whatToExpect: weather.whatToExpect,
         impactScores: weather.impactScores,
         hourly: weather.hourly,
+        dailyForecasts: weather.dailyForecasts,
+        utcOffsetSeconds: weather.utcOffsetSeconds,
       );
     }
     return weather;
@@ -499,7 +501,13 @@ class _TodayDashboardView extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             // 1. Hero Telemetry & Summary
-            CurrentConditionsHero(weather: displayWeather),
+            CurrentConditionsHero(
+              weather: displayWeather,
+              forecastTimeLabel: selectedForecastIndex > 0 &&
+                      selectedForecastIndex < weather.hourly.length
+                  ? weather.hourly[selectedForecastIndex].timeLabel
+                  : null,
+            ),
             const SizedBox(height: WeatherSpacing.space3),
 
             // 2. Hourly Forecast Rail & Threat Intensity Bar

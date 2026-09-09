@@ -12,10 +12,21 @@ class CurrentConditionsHero extends StatelessWidget {
     required this.weather,
     super.key,
     this.expanded = false,
+    this.forecastTimeLabel,
   });
 
   final WeatherModel weather;
   final bool expanded;
+  /// When supplied, the hero represents an hourly forecast rather than an
+  /// observed current condition. Hourly payloads do not include apparent
+  /// temperature, so the UI must not label the forecast temperature as one.
+  final String? forecastTimeLabel;
+
+  bool get _isForecast => forecastTimeLabel != null;
+
+  String get _temperatureContext => _isForecast
+      ? 'Forecast for $forecastTimeLabel'
+      : 'Feels like ${WeatherFormatters.degrees(weather.feelsLike)}';
 
   Color _riskBadgeColor(String risk) {
     return switch (risk.toUpperCase()) {
@@ -60,8 +71,8 @@ class CurrentConditionsHero extends StatelessWidget {
       container: true,
       label:
           '${weather.location}. ${weather.temperature.round()} degrees. '
-          '${weather.condition.label}. Feels like ${weather.feelsLike.round()} '
-          'degrees. High ${weather.high.round()}, low ${weather.low.round()}.',
+          '${weather.condition.label}. ${_isForecast ? 'Forecast for $forecastTimeLabel' : 'Feels like ${weather.feelsLike.round()} degrees'}. '
+          'High ${weather.high.round()}, low ${weather.low.round()}.',
       child: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
           final isCompact = constraints.maxWidth < 500;
@@ -111,7 +122,7 @@ class CurrentConditionsHero extends StatelessWidget {
                               ],
                             ),
                             _buildAnimatedText(
-                              'Feels like ${WeatherFormatters.degrees(weather.feelsLike)}',
+                              _temperatureContext,
                               WeatherType.label.copyWith(
                                 color: WeatherPalette.textSecondary,
                                 fontSize: 13,
@@ -234,7 +245,7 @@ class CurrentConditionsHero extends StatelessWidget {
                             ],
                           ),
                           _buildAnimatedText(
-                            'Feels like ${WeatherFormatters.degrees(weather.feelsLike)}',
+                            _temperatureContext,
                             WeatherType.label.copyWith(
                               color: WeatherPalette.textSecondary,
                               fontSize: 14,
