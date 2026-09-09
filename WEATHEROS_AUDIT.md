@@ -69,13 +69,14 @@ _Last updated: 2026-09-08. This is a living audit; device conclusions are only m
 - `ce2b60a` adds a release-mode **Beta** build configuration and shared **WeatherOS Beta** Xcode scheme. Its bundle ID is `tech.onlytrueperspective.weatheros.beta` and its home-screen display name is `WeatherOS Beta`; production Debug/Profile/Release configurations retain `tech.onlytrueperspective.weatheros` and `WeatherOS`.
 - The Beta configuration is a second configuration of the existing Runner target, not a duplicate target. It uses the same Flutter source, assets, pre-Flagship UI, iOS 15 deployment target, and automatic signing team. It does not enable App Groups, widgets, watchOS, push, or background capabilities.
 - Both repository-root and legacy `ios/` Xcode Cloud post-clone scripts pin Flutter 3.47.2. A beta workflow can set `WEATHEROS_BETA_BUILD=1`; the script then feeds Xcode Cloud's monotonically increasing `CI_BUILD_NUMBER` to Flutter so TestFlight builds do not reuse a build number.
-- No Apple Developer/App Store Connect beta App ID or app record is represented in this repository. It must be checked/created in the authenticated Apple portals; no credentials, provisioning profiles, certificates, or API keys are stored here.
+- Apple Developer now has explicit Beta App ID `tech.onlytrueperspective.weatheros.beta` (`WeatherOS Beta`) under team `3MVY7ZJ9NN`. It was registered with no optional App Services enabled; the production WeatherOS identifier was verified unchanged.
+- App Store Connect now has the separate **WeatherOS Beta** iOS app record (Apple app ID `6810007458`, SKU `weatheros-beta`, initial status **Prepare for Submission**). No build has been uploaded, no public App Store submission was made, and no credentials, provisioning profiles, certificates, or API keys are stored here.
 
 #### Apple-side first-build checklist
 
-1. In Certificates, Identifiers & Profiles, verify or create the explicit App ID `tech.onlytrueperspective.weatheros.beta` for team `3MVY7ZJ9NN`. Do not alter the production identifier.
-2. In App Store Connect, create a separate app record named **WeatherOS Beta** using that beta bundle ID. Complete its required app/privacy metadata using the same data declarations only after review.
-3. In Xcode Cloud, add a workflow for the shared **WeatherOS Beta** scheme: archive/action distribution to TestFlight, branch restricted to the intended beta branch, and environment variable `WEATHEROS_BETA_BUILD=1`. Xcode Cloud manages distribution signing; do not commit signing material.
+1. On macOS, check out `fd214ca`, run `fvm install 3.47.2 && fvm flutter pub get`, run `cd ios && pod install`, then open `ios/Runner.xcworkspace` in Xcode. Do not run the production Runner scheme on the phone.
+2. Select the shared **WeatherOS Beta** scheme and verify automatic signing resolves to team `3MVY7ZJ9NN` and bundle ID `tech.onlytrueperspective.weatheros.beta`.
+3. In Xcode, start Xcode Cloud setup for that scheme. The App Store Connect Beta Xcode Cloud page confirms that this initial setup requires Xcode. Create an Archive workflow, restrict its start condition to the intended beta branch, set Deployment Preparation to **TestFlight (Internal Testing Only)**, and add `WEATHEROS_BETA_BUILD=1` to its environment.
 4. Run the first build, inspect archive signing and bundle metadata in its logs, then wait for App Store Connect processing. Add the intended internal tester and install **WeatherOS Beta** beside—not over—the production App Store app.
 5. Before every subsequent QA cycle, record the Git revision, TestFlight version/build, device model, iOS version, and test results in `BUGS.md` / this audit.
 
