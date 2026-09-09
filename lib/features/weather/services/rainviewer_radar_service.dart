@@ -24,6 +24,14 @@ class RainViewerRadarService {
     required double longitude,
     int zoom = 7,
   }) async {
+    if (!latitude.isFinite ||
+        !longitude.isFinite ||
+        latitude < -85.05112878 ||
+        latitude > 85.05112878 ||
+        longitude < -180 ||
+        longitude > 180) {
+      return null;
+    }
     final effectiveZoom = zoom.clamp(1, 7);
     final c = client ?? http.Client();
     try {
@@ -44,9 +52,12 @@ class RainViewerRadarService {
       final n = 1 << effectiveZoom;
       final x = (((longitude + 180) / 360) * n).floor().clamp(0, n - 1);
       final latRad = latitude * math.pi / 180;
-      final y = ((1 - math.log(math.tan(latRad) + 1 / math.cos(latRad)) / math.pi) / 2 * n)
-          .floor()
-          .clamp(0, n - 1);
+      final y =
+          ((1 - math.log(math.tan(latRad) + 1 / math.cos(latRad)) / math.pi) /
+                  2 *
+                  n)
+              .floor()
+              .clamp(0, n - 1);
 
       final radarUrl = '$host$path/256/$effectiveZoom/$x/$y/2/1_1.png';
       final baseMapUrl =

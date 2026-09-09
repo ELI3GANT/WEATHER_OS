@@ -37,7 +37,8 @@ class _RadarViewState extends State<RadarView>
     duration: const Duration(seconds: 4),
   );
 
-  int _selectedRangeIndex = 1; // 0: 50mi (zoom 7), 1: 100mi (zoom 6), 2: 250mi (zoom 5)
+  int _selectedRangeIndex =
+      1; // 0: 50mi (zoom 7), 1: 100mi (zoom 6), 2: 250mi (zoom 5)
   bool _isPlaying = true;
   late Future<RadarTileData?> _radarTiles;
   StreamSubscription<int>? _rangeSub;
@@ -201,7 +202,7 @@ class _RadarViewState extends State<RadarView>
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      'LIVE SWEEP',
+                      'LATEST RADAR',
                       style: WeatherType.label.copyWith(
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
@@ -232,16 +233,40 @@ class _RadarViewState extends State<RadarView>
                           builder: (context, snapshot) {
                             final data = snapshot.data;
                             if (data == null) {
+                              final isLoading =
+                                  snapshot.connectionState !=
+                                  ConnectionState.done;
                               return Container(
                                 color: WeatherPalette.canvasDeep,
-                                child: const Center(
-                                  child: Text(
-                                    'Acquiring Radar Sweep...',
-                                    style: TextStyle(
-                                      color: WeatherPalette.textSecondary,
-                                      fontSize: 12,
-                                    ),
-                                  ),
+                                child: Center(
+                                  child: isLoading
+                                      ? const Text(
+                                          'Acquiring latest radar...',
+                                          style: TextStyle(
+                                            color: WeatherPalette.textSecondary,
+                                            fontSize: 12,
+                                          ),
+                                        )
+                                      : Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: <Widget>[
+                                            const Text(
+                                              'Radar is temporarily unavailable.',
+                                              textAlign: TextAlign.center,
+                                              style: TextStyle(
+                                                color: WeatherPalette
+                                                    .textSecondary,
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 8),
+                                            TextButton(
+                                              onPressed: () =>
+                                                  setState(_loadTiles),
+                                              child: const Text('Retry'),
+                                            ),
+                                          ],
+                                        ),
                                 ),
                               );
                             }
@@ -254,7 +279,9 @@ class _RadarViewState extends State<RadarView>
                                   fit: BoxFit.cover,
                                   filterQuality: FilterQuality.medium,
                                   errorBuilder: (context, error, stackTrace) =>
-                                      Container(color: WeatherPalette.canvasDeep),
+                                      Container(
+                                        color: WeatherPalette.canvasDeep,
+                                      ),
                                 ),
                                 // 2. Real-time RainViewer Radar Reflectivity Overlay
                                 Image.network(
@@ -273,7 +300,8 @@ class _RadarViewState extends State<RadarView>
                           builder: (context, child) {
                             return CustomPaint(
                               painter: _RadarCanvasPainter(
-                                sweepAngle: _sweepController.value * math.pi * 2,
+                                sweepAngle:
+                                    _sweepController.value * math.pi * 2,
                                 rangeLabel: _ranges[_selectedRangeIndex],
                               ),
                             );
@@ -534,5 +562,6 @@ class _RadarCanvasPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _RadarCanvasPainter oldDelegate) =>
-      oldDelegate.sweepAngle != sweepAngle || oldDelegate.rangeLabel != rangeLabel;
+      oldDelegate.sweepAngle != sweepAngle ||
+      oldDelegate.rangeLabel != rangeLabel;
 }

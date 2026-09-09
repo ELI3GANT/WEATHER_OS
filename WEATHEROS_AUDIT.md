@@ -130,7 +130,7 @@ the restored source.
 - The parser now reads Open-Meteo `current_units.visibility`: that Boston value
   correctly becomes 12.49 mi rather than 40.98 mi. Regression coverage handles
   both feet and metres.
-- The restored app has passed all 58 current non-golden tests covering startup,
+- The restored app has passed all 61 current non-golden tests covering startup,
   current conditions, location switching and dialog entry, provider refresh,
   accessibility layout, UI polish, cache behavior, and Open-Meteo parsing.
 - Cache cold starts now honor the existing 15-minute TTL: a fresh cached
@@ -148,6 +148,10 @@ the restored source.
 - Hourly selection now uses Open-Meteo's location-local `current.time`, rather
   than the host clock, so a searched city in another timezone does not skip
   upcoming hourly rows.
+- RainViewer metadata was live-checked successfully. Radar now validates
+  Web-Mercator-compatible coordinates before networking, calls the displayed
+  static result `LATEST RADAR`, and separates loading from a retryable
+  unavailable state.
 - Weather models retain Open-Meteo's `utc_offset_seconds` and raw WMO code.
   The header and atmosphere use location-local time for searched cities; WMO 2
   keeps a partly-cloudy scene while WMO 3 uses overcast. Live Tokyo verification
@@ -190,4 +194,5 @@ the restored source.
 - **Today/hourly/weekly:** `WeatherHomeScreen` composes the pre-Flagship hero,
   hourly rail, weekly card, and detail cards from the provider model.
 - **Radar/preferences:** RainViewer is exposed through the Radar tab; a
-  SharedPreferences preference controls its visibility.
+  SharedPreferences preference controls its visibility. It renders the latest
+  available frame rather than claiming a live animated sweep.
