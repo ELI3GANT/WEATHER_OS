@@ -111,16 +111,9 @@ class _WeatherHomeScreenState extends State<WeatherHomeScreen> {
     });
   }
 
-  int _getAlertCount(WeatherModel? weather) {
-    if (weather == null) return 0;
-    if (weather.riskLevel == 'HIGH RISK') return 2;
-    if (weather.riskLevel == 'MODERATE RISK' ||
-        weather.condition == WeatherCondition.storm ||
-        weather.condition == WeatherCondition.rain) {
-      return 1;
-    }
-    return 0;
-  }
+  // Open-Meteo conditions are not an official alert feed. Do not turn local
+  // heuristics into a notification badge that looks like a real warning.
+  int _getAlertCount(WeatherModel? weather) => 0;
 
   void _onTabSelected(WeatherNavTab tab) {
     if (!mounted) return;

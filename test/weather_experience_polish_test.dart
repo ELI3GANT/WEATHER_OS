@@ -6,6 +6,7 @@ import 'package:weather_os/features/weather/models/weather_atmosphere_state.dart
 import 'package:weather_os/features/weather/models/weather_model.dart';
 import 'package:weather_os/features/weather/widgets/current_conditions_hero.dart';
 import 'package:weather_os/features/weather/widgets/weather_atmosphere.dart';
+import 'package:weather_os/features/weather/widgets/weather_alerts_view.dart';
 import 'package:weather_os/features/weather/widgets/weather_celestial_compass_card.dart';
 import 'package:weather_os/features/weather/widgets/weather_status_view.dart';
 
@@ -301,6 +302,25 @@ void main() {
         switchers.every((switcher) => switcher.duration == Duration.zero),
         isTrue,
       );
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('alerts view does not fabricate official warnings', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: WeatherTheme.dark,
+          home: Scaffold(
+            body: WeatherAlertsView(weather: ConditionFixtures.thunderstorm),
+          ),
+        ),
+      );
+
+      expect(find.text('Official alerts unavailable'), findsOneWidget);
+      expect(find.text('NOT CONNECTED'), findsOneWidget);
+      expect(find.text('Flash Flood Warning'), findsNothing);
+      expect(find.text('Severe Thunderstorm Watch'), findsNothing);
       expect(tester.takeException(), isNull);
     });
   });

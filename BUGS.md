@@ -27,6 +27,10 @@ _Last updated: 2026-09-09. Only reproduced or source-proven issues are listed. A
 ## Data/API
 
 - The live Open-Meteo query shape returns current, hourly, and daily data successfully.
+- Core weather use is free and independent of purchases: Open-Meteo forecast,
+  Open-Meteo geocoding, RainViewer radar, and local cache have no application
+  API key or required backend. In-app purchases remain isolated to optional
+  supporter entitlements.
 - Open-Meteo returns local wall-clock timestamps with `timezone=auto`. Hourly
   selection now uses response `current.time`; atmosphere timing still deserves
   real-device validation across searched timezones.
@@ -52,3 +56,4 @@ _Last updated: 2026-09-09. Only reproduced or source-proven issues are listed. A
 | WOS-021 | P3 | Today accessibility/motion | Enable the operating system reduce-motion setting, then load or refresh Today. | The hero’s glyph and text switchers used fixed animation durations even when motion reduction was requested. | Respect `MediaQuery.disableAnimationsOf(context)` for all hero transitions. | Full 64-test non-golden suite and analysis pass; device verification pending. | Fixed — source verified |
 | WOS-022 | P1 | Today celestial timezone | Search a location outside the device timezone and inspect the Sun & Daylight indicator. | Solar progress used `DateTime.now()` from the host/device, so its indicator could show night or dawn while the forecast location was in daylight. | Convert the current UTC instant through the forecast location’s Open-Meteo offset before calculating solar progress. | Full 65-test non-golden suite and analysis pass; device verification pending. | Fixed — source verified |
 | WOS-023 | P3 | Today forecast accessibility/motion | Enable reduce motion, select an hourly cell, or expand a daily forecast row. | Hourly selection and weekly temperature/expansion animations retained fixed durations after the hero began honoring reduced motion. | Make hourly and weekly animation durations zero when the accessibility setting is enabled. | Full 66-test non-golden suite and analysis pass; device verification pending. | Fixed — source verified |
+| WOS-024 | P1 | Alerts data integrity | Open Alerts under storm, snow, fog, rain, or calm conditions. | The app derived official-looking National Weather Service alert titles, expiry times, sources, warning counts, and “all clear” claims from Open-Meteo conditions despite having no official alert feed. | Disable fabricated alert content and alert badges; show an explicit unavailable state until a real official provider is intentionally integrated. | Storm fixture regression confirms no fabricated warning title appears; live free forecast/geocoding paths, full 67-test non-golden suite, and analysis pass. | Fixed — source/live verified |

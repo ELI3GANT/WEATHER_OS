@@ -130,7 +130,7 @@ the restored source.
 - The parser now reads Open-Meteo `current_units.visibility`: that Boston value
   correctly becomes 12.49 mi rather than 40.98 mi. Regression coverage handles
   both feet and metres.
-- The restored app has passed all 66 current non-golden tests covering startup,
+- The restored app has passed all 67 current non-golden tests covering startup,
   current conditions, location switching and dialog entry, provider refresh,
   accessibility layout, UI polish, cache behavior, and Open-Meteo parsing.
 - Cache cold starts now honor the existing 15-minute TTL: a fresh cached
@@ -163,6 +163,15 @@ the restored source.
   so selection and expansion do not introduce avoidable motion.
 - The Sun & Daylight progress indicator now uses the forecast location’s
   Open-Meteo timezone offset, matching the header, hourly rail, and atmosphere.
+- Core current conditions, forecasts, search, radar, and cache are free:
+  they use public Open-Meteo/RainViewer endpoints and local storage, with no
+  application API key or required WeatherOS backend. Optional Google Play
+  supporter purchases are isolated from this data path. Live forecast and
+  geocoding sanity requests succeeded on September 9.
+- The Alerts tab no longer fabricates official warnings, warning counts,
+  expiration times, sources, or an “all clear” status. Until a deliberately
+  integrated official alert provider exists, it truthfully reports that alert
+  coverage is unavailable.
 - Weather models retain Open-Meteo's `utc_offset_seconds` and raw WMO code.
   The header and atmosphere use location-local time for searched cities; WMO 2
   keeps a partly-cloudy scene while WMO 3 uses overcast. Live Tokyo verification
