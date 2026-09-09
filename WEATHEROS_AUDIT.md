@@ -51,14 +51,25 @@ _Last updated: 2026-09-08. This is a living audit; device conclusions are only m
 - Android uses AGP 9.1.0, Kotlin 2.4.0, Gradle 9.3.1, compile/target SDK supplied by Flutter, and Java 17 source/target compatibility.
 - Connected hardware: LG G7 (`LMG710ULM143754a3`), Android 9, 1440×3120 at 560 dpi; location permissions are granted and device location is enabled.
 - Installed app: WeatherOS 1.0.6 (version code 20), updated 2026-09-06. It launches without a detected WeatherOS crash, but this installed build predates this audit's restored source verification and is Flagship-era UI.
-- Local source build is blocked on this ARM64 Linux host: JDK 17 fixes the JDK 26 incompatibility, but AGP's x86_64-only AAPT2 cannot run because no x86_64 runtime loader is available. No source APK has been installed from the restored `main` branch.
+- ARM64 Arch Linux build compatibility is now established without project changes: an official Arch x86_64 sysroot lives at `~/.local/x86_64-root`; `~/.local/bin/aapt2` runs AGP's x86_64 AAPT2 through `qemu-x86_64 -L`; and the user-level Gradle override is backed up before use. JDK 17 is required; Java 26 remains incompatible with this AGP workflow.
+- `aapt2 version` succeeds through QEMU and both universal and arm64-only debug APKs build from `fbf06ef`. The arm64 APK is `build/app/outputs/flutter-apk/app-arm64-v8a-debug.apk` (642 MB, SHA-256 `f7c3162a7028858416655adf73cdb44b38b5f28a421711f815aad5965bb47b16`).
+- Installation is blocked only by the LG G7's 968 MB free internal storage (`Requested internal only, but not enough space`). No existing app was uninstalled or overwritten. Resume Android device testing after freeing approximately 2 GB, then use `adb install -r`; uninstall only if Android returns `INSTALL_FAILED_UPDATE_INCOMPATIBLE`.
+
+## iOS configuration and static audit
+
+- The project is one `Runner` application target, automatically signed by the configured Apple team, with bundle ID `tech.onlytrueperspective.weatheros`, iOS 15.0 minimum deployment, and Flutter-provided marketing/build values.
+- `Info.plist` provides when-in-use and legacy always-location usage strings. There are no background modes, ATS exceptions, push-notification entitlements, App Group entitlements, or project-configured widget/watch extension targets. HTTPS networking therefore uses standard ATS behavior; background location is not enabled.
+- `WeatherOSNativeUI` is compiled into Runner and owns the SwiftUI overlay, Flutter method channels, native sheets, radar controls, and haptics. It is not the Dart Today dashboard and has not been redesigned in this phase.
+- `ios/WeatherOSWidgets/` and `ios/WeatherOSWatch/` contain prototype WidgetKit/WatchConnectivity source, but neither is referenced by a native Xcode target. Their declared App Group is consequently unavailable to the active Runner target. No capability was enabled during this audit.
+- Xcode Cloud is configured for the Runner target only. Its post-clone script now obtains the repository-pinned Flutter 3.47.2 rather than a moving `stable` branch.
+- This ARM64 Linux host has no Xcode or `xcrun`; `libimobiledevice` cannot enumerate a paired iPhone (`Unable to retrieve device list`). It cannot build, inspect the installed app version, or run iPhone device tests. No action was taken on the App Store installation.
 
 ## Build and test commands
 
 ```bash
 JAVA_HOME=/usr/lib/jvm/java-17-openjdk PATH=/usr/lib/jvm/java-17-openjdk/bin:$PATH ./.fvm/flutter_sdk/bin/flutter analyze
 JAVA_HOME=/usr/lib/jvm/java-17-openjdk PATH=/usr/lib/jvm/java-17-openjdk/bin:$PATH ./.fvm/flutter_sdk/bin/flutter test
-JAVA_HOME=/usr/lib/jvm/java-17-openjdk PATH=/usr/lib/jvm/java-17-openjdk/bin:$PATH ./.fvm/flutter_sdk/bin/flutter build apk --debug
+JAVA_HOME=/usr/lib/jvm/java-17-openjdk PATH=/usr/lib/jvm/java-17-openjdk/bin:$PATH ./.fvm/flutter_sdk/bin/flutter build apk --debug --split-per-abi --target-platform android-arm64
 adb devices -l
 ```
 
@@ -115,10 +126,10 @@ the restored source.
 
 ## Technical debt and priorities
 
-1. Establish an ARM64-capable Android AAPT2/build environment, then build and exercise the restored `main` APK on the LG G7.
+1. Free LG G7 internal storage, install the already built arm64 restored-source APK, and exercise it before claiming Android runtime fixes.
 2. Make golden rendering deterministic or re-baseline only after visual review.
-3. Review backup-branch data/cache changes as small independently tested patches; do not reintroduce the Flagship UI.
-4. Add focused real-device checks for location, refresh/offline, search, navigation/back, keyboard, and system bars once a source APK can be built.
+3. Decide whether WidgetKit/watchOS are product requirements. If so, create and sign real extension targets, entitlements, App Group provisioning, and focused tests as a deliberate capability project—not as an incidental fix.
+4. Use macOS/Xcode to build the exact restored revision and test iPhone lifecycle, permission, cache, layout, and live data without replacing the App Store installation prematurely.
 
 ## Subsystem map: input → transformation → state → UI
 

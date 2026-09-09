@@ -12,7 +12,7 @@ public class WatchSessionReceiver: NSObject, ObservableObject, WCSessionDelegate
     @Published public var condition: String = "rain"
     @Published public var high: Double = 72.0
     @Published public var low: Double = 62.0
-    @Published public var precipChance: int = 90
+    @Published public var precipChance: Int = 90
     @Published public var dailySummary: String = "Scattered showers with gusty winds."
     @Published public var hourly: [[String: Any]] = []
     @Published public var daily: [[String: Any]] = []

@@ -182,7 +182,15 @@ public class WeatherNativeBridge: NSObject, FlutterPlugin, ObservableObject, UIA
 
             let appGroup = args["appGroup"] as? String
                 ?? "group.tech.onlytrueperspective.weatheros"
-            UserDefaults(suiteName: appGroup)?.set(jsonPayload, forKey: "weather_payload")
+            guard let defaults = UserDefaults(suiteName: appGroup) else {
+                result(FlutterError(
+                    code: "app_group_unavailable",
+                    message: "WeatherOS App Group is not configured for this build.",
+                    details: appGroup
+                ))
+                return
+            }
+            defaults.set(jsonPayload, forKey: "weather_payload")
             WidgetCenter.shared.reloadAllTimelines()
 
             if WCSession.isSupported() {
@@ -427,4 +435,3 @@ public class PassThroughView: UIView {
         return hit
     }
 }
-
