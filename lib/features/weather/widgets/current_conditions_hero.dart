@@ -36,9 +36,16 @@ class CurrentConditionsHero extends StatelessWidget {
     };
   }
 
-  Widget _buildAnimatedText(String text, TextStyle style, Key key) {
+  Widget _buildAnimatedText(
+    String text,
+    TextStyle style,
+    Key key, {
+    required bool disableAnimations,
+  }) {
     return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 220),
+      duration: disableAnimations
+          ? Duration.zero
+          : const Duration(milliseconds: 220),
       transitionBuilder: (Widget child, Animation<double> animation) {
         return FadeTransition(
           opacity: animation,
@@ -66,6 +73,7 @@ class CurrentConditionsHero extends StatelessWidget {
   Widget build(BuildContext context) {
     final riskColor = _riskBadgeColor(weather.riskLevel);
     final atmosphereState = WeatherAtmosphereState.fromWeather(weather);
+    final disableAnimations = MediaQuery.disableAnimationsOf(context);
 
     return Semantics(
       container: true,
@@ -87,7 +95,9 @@ class CurrentConditionsHero extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: <Widget>[
                       AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 250),
+                        duration: disableAnimations
+                            ? Duration.zero
+                            : const Duration(milliseconds: 250),
                         child: WeatherGlyph(
                           key: ValueKey('glyph_${weather.condition.name}'),
                           condition: weather.condition,
@@ -110,6 +120,7 @@ class CurrentConditionsHero extends StatelessWidget {
                                     fontWeight: FontWeight.w700,
                                   ),
                                   ValueKey('temp_${weather.temperature.round()}'),
+                                  disableAnimations: disableAnimations,
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
@@ -128,6 +139,7 @@ class CurrentConditionsHero extends StatelessWidget {
                                 fontSize: 13,
                               ),
                               ValueKey('feels_${weather.feelsLike.round()}'),
+                              disableAnimations: disableAnimations,
                             ),
                             const SizedBox(height: 2),
                             _buildAnimatedText(
@@ -138,6 +150,7 @@ class CurrentConditionsHero extends StatelessWidget {
                                 color: WeatherPalette.textPrimary,
                               ),
                               ValueKey('label_${weather.condition.name}'),
+                              disableAnimations: disableAnimations,
                             ),
                           ],
                         ),
@@ -211,7 +224,9 @@ class CurrentConditionsHero extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
                       AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 250),
+                        duration: disableAnimations
+                            ? Duration.zero
+                            : const Duration(milliseconds: 250),
                         child: WeatherGlyph(
                           key: ValueKey('glyph_${weather.condition.name}'),
                           condition: weather.condition,
@@ -233,6 +248,7 @@ class CurrentConditionsHero extends StatelessWidget {
                                   fontWeight: FontWeight.w700,
                                 ),
                                 ValueKey('temp_${weather.temperature.round()}'),
+                                disableAnimations: disableAnimations,
                               ),
                               const SizedBox(width: 4),
                               Text(
@@ -251,6 +267,7 @@ class CurrentConditionsHero extends StatelessWidget {
                               fontSize: 14,
                             ),
                             ValueKey('feels_${weather.feelsLike.round()}'),
+                            disableAnimations: disableAnimations,
                           ),
                           _buildAnimatedText(
                             weather.condition.label,
@@ -259,6 +276,7 @@ class CurrentConditionsHero extends StatelessWidget {
                               fontWeight: FontWeight.w700,
                             ),
                             ValueKey('label_${weather.condition.name}'),
+                            disableAnimations: disableAnimations,
                           ),
                         ],
                       ),

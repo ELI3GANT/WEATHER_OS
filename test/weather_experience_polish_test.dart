@@ -260,5 +260,29 @@ void main() {
       expect(find.text('The atmosphere is quiet.'), findsNothing);
       expect(tester.takeException(), isNull);
     });
+
+    testWidgets('CurrentConditionsHero honors the reduce-motion setting', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: WeatherTheme.dark,
+          home: MediaQuery(
+            data: const MediaQueryData(disableAnimations: true),
+            child: Scaffold(body: CurrentConditionsHero(weather: ConditionFixtures.clearDay)),
+          ),
+        ),
+      );
+
+      final switchers = tester.widgetList<AnimatedSwitcher>(
+        find.byType(AnimatedSwitcher),
+      );
+      expect(switchers, isNotEmpty);
+      expect(
+        switchers.every((switcher) => switcher.duration == Duration.zero),
+        isTrue,
+      );
+      expect(tester.takeException(), isNull);
+    });
   });
 }
