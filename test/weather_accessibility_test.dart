@@ -7,6 +7,7 @@ import 'package:weather_os/features/weather/screens/weather_showcase_screen.dart
 import 'package:weather_os/features/weather/widgets/current_conditions_hero.dart';
 import 'package:weather_os/features/weather/widgets/hourly_forecast_rail.dart';
 import 'package:weather_os/features/weather/widgets/weather_metrics_strip.dart';
+import 'package:weather_os/features/weather/widgets/weather_weekly_outlook_card.dart';
 import 'package:weather_os/features/weather/widgets/weather_glyph.dart';
 
 void main() {
@@ -97,6 +98,58 @@ void main() {
     await tester.pump();
 
     expect(tester.binding.transientCallbackCount, 0);
+  });
+
+  testWidgets('forecast interactions honor reduce motion', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: WeatherTheme.dark,
+        home: MediaQuery(
+          data: const MediaQueryData(disableAnimations: true),
+          child: Scaffold(
+            body: SingleChildScrollView(
+              child: Column(
+                children: <Widget>[
+                  HourlyForecastRail(
+                    forecasts: MockWeather.newYorkRain.hourly,
+                    selectedIndex: 1,
+                  ),
+                  WeatherWeeklyOutlookCard(weather: MockWeather.newYorkRain),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(
+      tester
+          .widgetList<AnimatedScale>(find.byType(AnimatedScale))
+          .every((widget) => widget.duration == Duration.zero),
+      isTrue,
+    );
+    expect(
+      tester
+          .widgetList<AnimatedContainer>(find.byType(AnimatedContainer))
+          .every((widget) => widget.duration == Duration.zero),
+      isTrue,
+    );
+    expect(
+      tester
+          .widgetList<AnimatedPositioned>(find.byType(AnimatedPositioned))
+          .every((widget) => widget.duration == Duration.zero),
+      isTrue,
+    );
+    expect(
+      tester
+          .widgetList<AnimatedCrossFade>(find.byType(AnimatedCrossFade))
+          .every((widget) => widget.duration == Duration.zero),
+      isTrue,
+    );
+    expect(tester.takeException(), isNull);
   });
 }
 

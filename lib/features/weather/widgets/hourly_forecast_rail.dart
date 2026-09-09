@@ -140,6 +140,9 @@ class _ForecastCell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final active = isSelected;
+    final animationDuration = MediaQuery.disableAnimationsOf(context)
+        ? Duration.zero
+        : const Duration(milliseconds: 200);
     return Semantics(
       button: onTap != null,
       selected: isSelected,
@@ -156,10 +159,10 @@ class _ForecastCell extends StatelessWidget {
         borderRadius: BorderRadius.circular(WeatherRadii.control),
         child: AnimatedScale(
           scale: active ? 1.04 : 1.0,
-          duration: const Duration(milliseconds: 200),
+          duration: animationDuration,
           curve: Curves.easeOutCubic,
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
+            duration: animationDuration,
             curve: Curves.easeOutCubic,
             decoration: BoxDecoration(
               color: active

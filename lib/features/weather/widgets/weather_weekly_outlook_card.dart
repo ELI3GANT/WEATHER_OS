@@ -29,6 +29,12 @@ class _WeatherWeeklyOutlookCardState extends State<WeatherWeeklyOutlookCard> {
   @override
   Widget build(BuildContext context) {
     final dailyList = widget.weather.dailyForecasts;
+    final animationDuration = MediaQuery.disableAnimationsOf(context)
+        ? Duration.zero
+        : const Duration(milliseconds: 400);
+    final expansionDuration = MediaQuery.disableAnimationsOf(context)
+        ? Duration.zero
+        : const Duration(milliseconds: 220);
     if (dailyList.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -174,7 +180,7 @@ class _WeatherWeeklyOutlookCardState extends State<WeatherWeeklyOutlookCard> {
                                   ),
                                   // Range bar
                                   AnimatedPositioned(
-                                    duration: const Duration(milliseconds: 400),
+                                    duration: animationDuration,
                                     curve: Curves.easeOutCubic,
                                     left: left,
                                     child: Container(
@@ -195,7 +201,7 @@ class _WeatherWeeklyOutlookCardState extends State<WeatherWeeklyOutlookCard> {
                                   // Current temperature indicator dot (for Today)
                                   if (currentNorm != null)
                                     AnimatedPositioned(
-                                      duration: const Duration(milliseconds: 400),
+                                      duration: animationDuration,
                                       curve: Curves.easeOutCubic,
                                       left: (currentNorm * barWidth - 4).clamp(
                                           0.0, barWidth - 8.0),
@@ -246,7 +252,7 @@ class _WeatherWeeklyOutlookCardState extends State<WeatherWeeklyOutlookCard> {
 
                 // Expandable Telemetry Drawer
                 AnimatedCrossFade(
-                  duration: const Duration(milliseconds: 220),
+                  duration: expansionDuration,
                   crossFadeState: isExpanded
                       ? CrossFadeState.showSecond
                       : CrossFadeState.showFirst,
