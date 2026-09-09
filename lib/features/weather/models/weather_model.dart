@@ -208,6 +208,8 @@ class WeatherModel {
         ? null
         : _windMph(rawWindSpeed, currentUnits['wind_speed_10m'] as String?);
     final windDirection = (current['wind_direction_10m'] as num?)?.toDouble();
+    final visibility = (current['visibility'] as num?)?.toDouble();
+    final currentTime = DateTime.tryParse(current['time'] as String? ?? '');
 
     if (feelsLike == null ||
         !feelsLike.isFinite ||
@@ -217,7 +219,9 @@ class WeatherModel {
         !windSpeed.isFinite ||
         windDirection == null ||
         !windDirection.isFinite ||
-        current['time'] is! String) {
+        visibility == null ||
+        !visibility.isFinite ||
+        currentTime == null) {
       throw const FormatException(
         'Weather response is missing required current conditions.',
       );
@@ -344,12 +348,20 @@ class WeatherModel {
       );
     }
 
-    final hourlyList = <HourlyForecast>[];
     // With `timezone=auto`, Open-Meteo timestamps are local wall-clock times
     // for the forecast location. Anchor selection to `current.time` rather
     // than this device's timezone so searched cities do not skip hours.
-    final now =
-        DateTime.tryParse(current['time'] as String? ?? '') ?? DateTime.now();
+    final now = currentTime;
+    if (!hourlyTemps.every((value) => value.isFinite) ||
+        !hourlyCodes.every((value) => value.isFinite) ||
+        !hourlyPrecipProbs.every((value) => value.isFinite) ||
+        !hourlyTimes.every((value) => DateTime.tryParse(value) != null)) {
+      throw const FormatException(
+        'Weather response has invalid hourly forecast data.',
+      );
+    }
+
+    final hourlyList = <HourlyForecast>[];
     var startIndex = 0;
     for (var i = 0; i < hourlyTimes.length; i++) {
       final parsed = DateTime.tryParse(hourlyTimes[i]);
@@ -437,6 +449,19 @@ class WeatherModel {
         'Weather response has incomplete daily forecast data.',
       );
     }
+    if (!dailyMaxList.every((value) => value.isFinite) ||
+        !dailyMinList.every((value) => value.isFinite) ||
+        !dailyUvList.every((value) => value.isFinite) ||
+        !dailyRainList.every((value) => value.isFinite) ||
+        !dailyPrecipProbList.every((value) => value.isFinite) ||
+        !dailyWeatherCodes.every((value) => value.isFinite) ||
+        !dailyTimes.every((value) => DateTime.tryParse(value) != null) ||
+        !dailySunriseList.every((value) => DateTime.tryParse(value) != null) ||
+        !dailySunsetList.every((value) => DateTime.tryParse(value) != null)) {
+      throw const FormatException(
+        'Weather response has invalid daily forecast data.',
+      );
+    }
 
     final dailyList = <DailyForecastItem>[];
     const weekdayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -513,7 +538,7 @@ class WeatherModel {
       // mocked payloads can use metres. Read `current_units` rather than
       // assuming a unit and overstating visibility by 3.28x.
       visibilityMiles: _visibilityMiles(
-        (current['visibility'] as num?)?.toDouble(),
+        visibility,
         (json['current_units'] as Map<String, dynamic>?)?['visibility']
             as String?,
       ),
@@ -556,8 +581,8 @@ class WeatherModel {
     );
   }
 
-  static double _visibilityMiles(double? visibility, String? unit) {
-    final value = visibility ?? 12874.752;
+  static double _visibilityMiles(double visibility, String? unit) {
+    final value = visibility;
     return switch (unit) {
       'ft' => value / 5280,
       'm' || null => value / 1609.344,

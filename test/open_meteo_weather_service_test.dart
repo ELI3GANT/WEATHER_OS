@@ -127,6 +127,26 @@ void main() {
       );
     });
 
+    test('rejects missing visibility and invalid forecast timestamps', () {
+      final missingVisibility = _validPayload(
+        current: <String, dynamic>{'visibility': null},
+      );
+      final invalidHourlyTime = _validPayload(
+        hourly: <String, dynamic>{
+          'time': <String>['not-a-timestamp'],
+        },
+      );
+
+      expect(
+        () => WeatherModel.fromOpenMeteoJson(missingVisibility),
+        throwsFormatException,
+      );
+      expect(
+        () => WeatherModel.fromOpenMeteoJson(invalidHourlyTime),
+        throwsFormatException,
+      );
+    });
+
     test('uses the forecast location offset for location-local time', () {
       const weather = WeatherModel(
         location: 'Tokyo',
