@@ -18,7 +18,9 @@ _Last updated: 2026-09-08. Only reproduced or source-proven issues are listed. A
 ## Data/API
 
 - The live Open-Meteo query shape returns current, hourly, and daily data successfully.
-- Timezone parsing needs a separate audit: Open-Meteo returns local wall-clock timestamps with `timezone=auto`, while the model uses host-local `DateTime` for hourly selection and atmosphere timing.
+- Open-Meteo returns local wall-clock timestamps with `timezone=auto`. Hourly
+  selection now uses response `current.time`; atmosphere timing still deserves
+  real-device validation across searched timezones.
 - The pre-Flagship UI does not implement a user unit-switch preference; do not claim °F/°C setting coverage until such a feature is deliberately introduced.
 
 ## Fixed
@@ -30,3 +32,4 @@ _Last updated: 2026-09-08. Only reproduced or source-proven issues are listed. A
 | WOS-008 | P1 | Visibility | Request visibility in metres and convert once to miles at parser boundary. | Focused Open-Meteo suite passes. | Fixed |
 | WOS-009 | P1 | Malformed API data | Reject incomplete Open-Meteo payloads instead of synthesizing weather from defaults. | Parser/provider tests pass. | Fixed |
 | WOS-002 | P1 | Cache/data freshness | Apply the existing 15-minute TTL before cold-start cache hydration. | Fresh and expired offline-cache provider tests pass. | Fixed |
+| WOS-010 | P1 | Hourly timezone | Anchor hourly selection to Open-Meteo `current.time`, not host-local time. | Cross-timezone regression test passes. | Fixed |

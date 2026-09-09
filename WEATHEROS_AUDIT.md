@@ -104,6 +104,9 @@ the restored source.
 - Cache cold starts now honor the existing 15-minute TTL: a fresh cached
   forecast supports offline startup, while an expired cache enters the existing
   unavailable/error state. Focused parser/provider coverage is now 12 tests.
+- Hourly selection now uses Open-Meteo's location-local `current.time`, rather
+  than the host clock, so a searched city in another timezone does not skip
+  upcoming hourly rows.
 - The full test suite has reproducible golden failures: the showcase golden cases have large pixel diffs (roughly 95–99%) and `home_large_text_lower` has a 0.10% / 320-pixel diff. These were not updated or masked.
 - Source-built primary-screen visual inspection on the LG G7 remains pending
   the Android AAPT2 host-environment fix. The currently installed app is not

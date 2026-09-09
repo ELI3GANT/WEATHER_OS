@@ -194,7 +194,11 @@ class WeatherModel {
     }
 
     final hourlyList = <HourlyForecast>[];
-    final now = DateTime.now();
+    // With `timezone=auto`, Open-Meteo timestamps are local wall-clock times
+    // for the forecast location. Anchor selection to `current.time` rather
+    // than this device's timezone so searched cities do not skip hours.
+    final now = DateTime.tryParse(current['time'] as String? ?? '') ??
+        DateTime.now();
     var startIndex = 0;
     for (var i = 0; i < hourlyTimes.length; i++) {
       final parsed = DateTime.tryParse(hourlyTimes[i]);

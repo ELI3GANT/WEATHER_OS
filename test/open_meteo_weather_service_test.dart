@@ -100,6 +100,33 @@ void main() {
         throwsFormatException,
       );
     });
+
+    test('selects hourly forecast using the response location clock', () {
+      final model = WeatherModel.fromOpenMeteoJson(<String, dynamic>{
+        'current': <String, dynamic>{
+          'time': '2026-08-20T09:15',
+          'temperature_2m': 70,
+          'weather_code': 0,
+        },
+        'daily': <String, dynamic>{
+          'temperature_2m_max': <num>[75],
+          'temperature_2m_min': <num>[60],
+        },
+        'hourly': <String, dynamic>{
+          'time': <String>[
+            '2026-08-20T08:00',
+            '2026-08-20T09:00',
+            '2026-08-20T10:00',
+          ],
+          'temperature_2m': <num>[68, 70, 72],
+          'weather_code': <num>[0, 0, 1],
+        },
+      });
+
+      expect(model.hourly.first.timeLabel, 'NOW');
+      expect(model.hourly.first.temperature, 70);
+      expect(model.hourly[1].timeLabel, '10 AM');
+    });
   });
 
   group('OpenMeteoWeatherService', () {
