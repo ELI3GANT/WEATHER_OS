@@ -11,9 +11,11 @@ class WeatherCelestialCompassCard extends StatelessWidget {
   const WeatherCelestialCompassCard({
     required this.weather,
     super.key,
+    this.currentTime,
   });
 
   final WeatherModel weather;
+  final DateTime? currentTime;
 
   double _parseTimeToDecimal(String timeStr, double fallback) {
     try {
@@ -35,8 +37,12 @@ class WeatherCelestialCompassCard extends StatelessWidget {
     return fallback;
   }
 
-  double _calculateSolarProgress() {
-    final now = DateTime.now();
+  /// Uses the forecast location's clock, not the device/host clock. This
+  /// keeps a searched city's sun position correct across timezones.
+  double calculateSolarProgress() {
+    final now = weather.locationTimeFromUtc(
+      currentTime ?? DateTime.now().toUtc(),
+    );
     final currentHourDec = now.hour + (now.minute / 60.0);
     final sunriseDec = _parseTimeToDecimal(weather.sunriseTime, 6.0);
     final sunsetDec = _parseTimeToDecimal(weather.sunsetTime, 20.0);
@@ -48,7 +54,7 @@ class WeatherCelestialCompassCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final solarProgress = _calculateSolarProgress();
+    final solarProgress = calculateSolarProgress();
 
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {

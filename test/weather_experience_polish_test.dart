@@ -3,8 +3,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:weather_os/app/theme/weather_theme.dart';
 import 'package:weather_os/features/weather/models/condition_fixtures.dart';
 import 'package:weather_os/features/weather/models/weather_atmosphere_state.dart';
+import 'package:weather_os/features/weather/models/weather_model.dart';
 import 'package:weather_os/features/weather/widgets/current_conditions_hero.dart';
 import 'package:weather_os/features/weather/widgets/weather_atmosphere.dart';
+import 'package:weather_os/features/weather/widgets/weather_celestial_compass_card.dart';
 import 'package:weather_os/features/weather/widgets/weather_status_view.dart';
 
 void main() {
@@ -148,6 +150,23 @@ void main() {
       );
 
       expect(state.daylightPhase, DaylightPhase.night);
+    });
+
+    test('celestial progress uses the forecast location clock', () {
+      final tokyo = WeatherModel.fromJson(<String, dynamic>{
+        ...ConditionFixtures.clearDay.toJson(),
+        'utcOffsetSeconds': 9 * 60 * 60,
+        'sunriseTime': '6:00 AM',
+        'sunsetTime': '6:00 PM',
+      });
+      final progress = WeatherCelestialCompassCard(
+        weather: tokyo,
+        currentTime: DateTime.utc(2026, 8, 29),
+      ).calculateSolarProgress();
+
+      // The fixture carries UTC+09:00, so midnight UTC is 9 AM locally:
+      // one quarter of the way between its 6 AM sunrise and 6 PM sunset.
+      expect(progress, closeTo(0.25, 0.001));
     });
   });
 
