@@ -71,6 +71,7 @@ _Last updated: 2026-09-08. This is a living audit; device conclusions are only m
 - Both repository-root and legacy `ios/` Xcode Cloud post-clone scripts pin Flutter 3.47.2. A beta workflow can set `WEATHEROS_BETA_BUILD=1`; the script then feeds Xcode Cloud's monotonically increasing `CI_BUILD_NUMBER` to Flutter so TestFlight builds do not reuse a build number. `pubspec.yaml` remains at the production baseline (`1.0.6+20`); only the Beta cloud archive receives the incremented build number.
 - Apple Developer now has explicit Beta App ID `tech.onlytrueperspective.weatheros.beta` (`WeatherOS Beta`) under team `3MVY7ZJ9NN`. It was registered with no optional App Services enabled; the production WeatherOS identifier was verified unchanged.
 - App Store Connect now has the separate **WeatherOS Beta** iOS app record (Apple app ID `6810007458`, SKU `weatheros-beta`, initial status **Prepare for Submission**). No build has been uploaded, no public App Store submission was made, and no credentials, provisioning profiles, certificates, or API keys are stored here.
+- The dedicated `beta` branch is pushed at `aef8d07` (`fix(weather): scope cache and honor visibility units`) and is the intended Xcode Cloud start condition. The current App Store Connect Xcode Cloud page has no workflow and explicitly requires initial setup in Xcode; therefore no archive, upload, or TestFlight build can be truthfully claimed from this Linux host.
 
 #### Apple-side first-build checklist
 
