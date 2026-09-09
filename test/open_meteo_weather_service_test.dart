@@ -38,11 +38,13 @@ void main() {
           'weather_code': 61,
           'surface_pressure': 1018.5,
           'wind_speed_10m': 14.2,
+          'visibility': 16093.44,
         },
         'daily': <String, dynamic>{
           'temperature_2m_max': <num>[76.0],
           'temperature_2m_min': <num>[63.0],
           'uv_index_max': <num>[6.4],
+          'precipitation_sum': <num>[0.8, 1.2],
         },
         'hourly': <String, dynamic>{
           'time': <String>[
@@ -74,9 +76,29 @@ void main() {
       expect(model.windSpeedMph, 14.2);
       expect(model.uvIndex, 6);
       expect(model.pressureInHg, closeTo(30.08, 0.05));
+      expect(model.totalRainInches, 0.8);
+      expect(model.dailyForecasts.first.totalRainInches, 0.8);
+      expect(model.visibilityMiles, closeTo(10, 0.001));
       expect(model.hourly, isNotEmpty);
       expect(model.hourly.first.isNow, isTrue);
       expect(model.hourly.first.timeLabel, 'NOW');
+    });
+
+    test('rejects incomplete payloads instead of inventing weather data', () {
+      expect(
+        () => WeatherModel.fromOpenMeteoJson(<String, dynamic>{}),
+        throwsFormatException,
+      );
+      expect(
+        () => WeatherModel.fromOpenMeteoJson(<String, dynamic>{
+          'current': <String, dynamic>{'temperature_2m': 70},
+          'daily': <String, dynamic>{
+            'temperature_2m_max': <num>[75],
+            'temperature_2m_min': <num>[60],
+          },
+        }),
+        throwsFormatException,
+      );
     });
   });
 
@@ -88,6 +110,7 @@ void main() {
         expect(request.url.queryParameters['latitude'], '37.7749');
         expect(request.url.queryParameters['longitude'], '-122.4194');
         expect(request.url.queryParameters['temperature_unit'], 'fahrenheit');
+        expect(request.url.queryParameters['current'], contains('visibility'));
 
         final payload = <String, dynamic>{
           'current': <String, dynamic>{

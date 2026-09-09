@@ -68,12 +68,15 @@ class WeatherProvider extends ChangeNotifier {
 
     // Hydrate from offline cache immediately on cold start
     if (_weather == null && cacheService != null) {
-      final cached = await cacheService!.getCachedWeather();
-      if (cached != null && !_isDisposed && generation == _loadGeneration) {
-        _weather = cached;
-        _state = WeatherLoadState.loaded;
-        _isOffline = true;
-        notifyListeners();
+      final isFresh = await cacheService!.isCacheFresh();
+      if (isFresh) {
+        final cached = await cacheService!.getCachedWeather();
+        if (cached != null && !_isDisposed && generation == _loadGeneration) {
+          _weather = cached;
+          _state = WeatherLoadState.loaded;
+          _isOffline = true;
+          notifyListeners();
+        }
       }
     }
 

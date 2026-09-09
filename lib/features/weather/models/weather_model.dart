@@ -90,7 +90,11 @@ class WeatherModel {
     final hourly =
         (json['hourly'] as Map<String, dynamic>?) ?? <String, dynamic>{};
 
-    final temp = (current['temperature_2m'] as num?)?.toDouble() ?? 70.0;
+    final temperatureValue = (current['temperature_2m'] as num?)?.toDouble();
+    if (temperatureValue == null || !temperatureValue.isFinite) {
+      throw const FormatException('Weather response is missing current temperature.');
+    }
+    final temp = temperatureValue;
     final feelsLike =
         (current['apparent_temperature'] as num?)?.toDouble() ?? temp;
     final weatherCode = (current['weather_code'] as num?)?.toInt();
@@ -122,17 +126,24 @@ class WeatherModel {
     final dailySunsetList =
         (daily['sunset'] as List<dynamic>?)?.cast<String>();
 
-    final high = (dailyMaxList != null && dailyMaxList.isNotEmpty)
-        ? (dailyMaxList.first.toDouble().isFinite ? dailyMaxList.first.toDouble() : temp + 4)
-        : temp + 4;
-    final low = (dailyMinList != null && dailyMinList.isNotEmpty)
-        ? (dailyMinList.first.toDouble().isFinite ? dailyMinList.first.toDouble() : temp - 6)
-        : temp - 6;
+    if (dailyMaxList == null ||
+        dailyMaxList.isEmpty ||
+        !dailyMaxList.first.toDouble().isFinite ||
+        dailyMinList == null ||
+        dailyMinList.isEmpty ||
+        !dailyMinList.first.toDouble().isFinite) {
+      throw const FormatException('Weather response is missing daily temperatures.');
+    }
+
+    final high = dailyMaxList.first.toDouble();
+    final low = dailyMinList.first.toDouble();
     final uvIndex = (dailyUvList != null && dailyUvList.isNotEmpty)
         ? dailyUvList.first.round()
         : 3;
+    // Open-Meteo is queried with `precipitation_unit=inch`, so these values
+    // are already inches. Converting again under-reports rainfall by ~25×.
     final rawDailyRain = (dailyRainList != null && dailyRainList.isNotEmpty)
-        ? dailyRainList.first.toDouble() * 0.03937 // mm to inches
+        ? dailyRainList.first.toDouble()
         : 0.80;
     final totalRain = rawDailyRain.isFinite ? rawDailyRain : 0.80;
     final precipProb = (dailyPrecipProbList != null && dailyPrecipProbList.isNotEmpty)
@@ -177,6 +188,10 @@ class WeatherModel {
     final hourlyPrecipProbs =
         (hourly['precipitation_probability'] as List<dynamic>?)?.cast<num>() ??
             <num>[];
+
+    if (hourlyTimes.isEmpty || hourlyTemps.isEmpty || hourlyCodes.isEmpty) {
+      throw const FormatException('Weather response is missing hourly forecast data.');
+    }
 
     final hourlyList = <HourlyForecast>[];
     final now = DateTime.now();
@@ -257,7 +272,7 @@ class WeatherModel {
     final dailyList = <DailyForecastItem>[];
     const weekdayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-    if (dailyMaxList != null && dailyMaxList.isNotEmpty) {
+    if (dailyMaxList.isNotEmpty) {
       final count = dailyMaxList.length;
       for (var i = 0; i < count && i < 7; i++) {
         final dTimeStr = i < dailyTimes.length ? dailyTimes[i] : null;
@@ -274,7 +289,7 @@ class WeatherModel {
                     : 'Day $i'));
 
         final dHigh = dailyMaxList[i].toDouble();
-        final dLow = (dailyMinList != null && i < dailyMinList.length)
+        final dLow = i < dailyMinList.length
             ? dailyMinList[i].toDouble()
             : dHigh - 12.0;
         final dCode = (dailyWeatherCodes.isNotEmpty &&
@@ -292,7 +307,7 @@ class WeatherModel {
             ? dailyUvList[i].round()
             : uvIndex;
         final dRain = (dailyRainList != null && i < dailyRainList.length)
-            ? dailyRainList[i].toDouble() * 0.03937
+            ? dailyRainList[i].toDouble()
             : 0.0;
         final dSunrise = (dailySunriseList != null && i < dailySunriseList.length)
             ? _formatDateTimeString(dailySunriseList[i])
@@ -357,7 +372,11 @@ class WeatherModel {
       pressureInHg: double.tryParse(pressureInHg.toStringAsFixed(2)) ?? 30.0,
       precipChance: precipProb,
       totalRainInches: double.tryParse(totalRain.toStringAsFixed(2)) ?? 0.0,
-      visibilityMiles: 8.0,
+      // Open-Meteo visibility is meters. Convert to miles only at this
+      // provider boundary; retain the legacy fallback for incomplete payloads.
+      visibilityMiles:
+          ((current['visibility'] as num?)?.toDouble() ?? 12874.752) /
+              1609.344,
       windDirectionCompass: _degreesToCompass(windDirection),
       windBearingDegrees: windDirection,
       sunriseTime: sunriseStr,

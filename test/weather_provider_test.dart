@@ -1,13 +1,20 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:weather_os/features/weather/models/mock_weather.dart';
 import 'package:weather_os/features/weather/models/weather_model.dart';
 import 'package:weather_os/features/weather/providers/weather_provider.dart';
+import 'package:weather_os/features/weather/services/weather_cache_service.dart';
 import 'package:weather_os/features/weather/services/weather_repository.dart';
 import 'package:weather_os/features/weather/services/weather_service.dart';
 
 void main() {
+  setUp(() {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+  });
+
   test('provider exposes loading then loaded weather', () async {
     final provider = WeatherProvider(
       repository: WeatherRepository(
@@ -66,7 +73,48 @@ void main() {
     expect(provider.latitude, 34.0522);
     expect(provider.longitude, -118.2437);
   });
+
+  test('uses a fresh cache when offline at cold start', () async {
+    const cache = WeatherCacheService();
+    await cache.saveWeather(MockWeather.newYorkRain);
+    final provider = WeatherProvider(
+      repository: const WeatherRepository(service: _FailingWeatherService()),
+      cacheService: cache,
+      telemetryExporter: _discardTelemetry,
+    );
+    addTearDown(provider.dispose);
+
+    await provider.load();
+
+    expect(provider.state, WeatherLoadState.loaded);
+    expect(provider.weather?.location, MockWeather.newYorkRain.location);
+    expect(provider.isOffline, isTrue);
+  });
+
+  test('rejects an expired cache when offline at cold start', () async {
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'weatheros_cached_weather_payload': jsonEncode(
+        MockWeather.newYorkRain.toJson(),
+      ),
+      'weatheros_cached_timestamp': DateTime.now()
+          .subtract(const Duration(minutes: 16))
+          .millisecondsSinceEpoch,
+    });
+    final provider = WeatherProvider(
+      repository: const WeatherRepository(service: _FailingWeatherService()),
+      cacheService: const WeatherCacheService(),
+      telemetryExporter: _discardTelemetry,
+    );
+    addTearDown(provider.dispose);
+
+    await provider.load();
+
+    expect(provider.state, WeatherLoadState.error);
+    expect(provider.weather, isNull);
+  });
 }
+
+Future<void> _discardTelemetry(WeatherModel _) async {}
 
 class _DelayedWeatherService implements WeatherService {
   final Map<String, Completer<WeatherModel>> _requests = {};
