@@ -50,6 +50,8 @@ class WeatherModel {
       'Flying Drones': 15,
       'Photography': 25,
     },
+    this.utcOffsetSeconds = 0,
+    this.wmoCode,
   });
 
   final String location;
@@ -77,6 +79,82 @@ class WeatherModel {
   final Map<String, double> severeRisks;
   final List<String> whatToExpect;
   final Map<String, int> impactScores;
+  final int utcOffsetSeconds;
+  final int? wmoCode;
+
+  /// The Open-Meteo offset belongs to the forecast location. An explicitly
+  /// supplied time is already a location-local test/preview value.
+  DateTime locationNow({DateTime? now}) =>
+      now ?? DateTime.now().toUtc().add(Duration(seconds: utcOffsetSeconds));
+
+  DateTime locationTimeFromUtc(DateTime utcTime) =>
+      utcTime.toUtc().add(Duration(seconds: utcOffsetSeconds));
+
+  static bool isCompleteCachePayload(Map<String, dynamic> json) {
+    const numberFields = <String>[
+      'temperature',
+      'feelsLike',
+      'high',
+      'low',
+      'humidity',
+      'windSpeedMph',
+      'uvIndex',
+      'pressureInHg',
+      'precipChance',
+      'totalRainInches',
+      'visibilityMiles',
+      'windBearingDegrees',
+      'utcOffsetSeconds',
+    ];
+    if (json['location'] is! String || json['condition'] is! String) {
+      return false;
+    }
+    for (final field in numberFields) {
+      final value = json[field];
+      if (value is! num || !value.isFinite) return false;
+    }
+    final hourly = json['hourly'];
+    final daily = json['dailyForecasts'];
+    if (hourly is! List || hourly.isEmpty || daily is! List || daily.isEmpty) {
+      return false;
+    }
+    return hourly.every((item) => _isValidHourlyCacheItem(item)) &&
+        daily.every((item) => _isValidDailyCacheItem(item));
+  }
+
+  static bool _isValidHourlyCacheItem(dynamic item) {
+    if (item is! Map<String, dynamic> ||
+        item['timeLabel'] is! String ||
+        item['condition'] is! String ||
+        item['threatLevel'] is! String ||
+        item['isNow'] is! bool) {
+      return false;
+    }
+    for (final field in <String>['temperature', 'precipChance']) {
+      final value = item[field];
+      if (value is! num || !value.isFinite) return false;
+    }
+    return true;
+  }
+
+  static bool _isValidDailyCacheItem(dynamic item) {
+    if (item is! Map<String, dynamic> ||
+        item['dayLabel'] is! String ||
+        item['condition'] is! String) {
+      return false;
+    }
+    for (final field in <String>[
+      'high',
+      'low',
+      'precipChance',
+      'uvIndex',
+      'totalRainInches',
+    ]) {
+      final value = item[field];
+      if (value is! num || !value.isFinite) return false;
+    }
+    return true;
+  }
 
   /// Factory constructor to parse standard Open-Meteo API response.
   factory WeatherModel.fromOpenMeteoJson(
@@ -89,6 +167,22 @@ class WeatherModel {
         (json['daily'] as Map<String, dynamic>?) ?? <String, dynamic>{};
     final hourly =
         (json['hourly'] as Map<String, dynamic>?) ?? <String, dynamic>{};
+    final currentUnits =
+        (json['current_units'] as Map<String, dynamic>?) ??
+        const <String, dynamic>{};
+    final dailyUnits =
+        (json['daily_units'] as Map<String, dynamic>?) ??
+        const <String, dynamic>{};
+    final hourlyUnits =
+        (json['hourly_units'] as Map<String, dynamic>?) ??
+        const <String, dynamic>{};
+
+    final utcOffsetSeconds = (json['utc_offset_seconds'] as num?)?.toInt();
+    if (utcOffsetSeconds == null) {
+      throw const FormatException(
+        'Weather response is missing its location timezone offset.',
+      );
+    }
 
     final temperatureValue = (current['temperature_2m'] as num?)?.toDouble();
     if (temperatureValue == null || !temperatureValue.isFinite) {
@@ -96,21 +190,50 @@ class WeatherModel {
         'Weather response is missing current temperature.',
       );
     }
-    final temp = temperatureValue;
-    final feelsLike =
-        (current['apparent_temperature'] as num?)?.toDouble() ?? temp;
+    final temp = _temperatureF(
+      temperatureValue,
+      currentUnits['temperature_2m'] as String?,
+    );
+    final rawFeelsLike = (current['apparent_temperature'] as num?)?.toDouble();
+    final feelsLike = rawFeelsLike == null
+        ? null
+        : _temperatureF(
+            rawFeelsLike,
+            currentUnits['apparent_temperature'] as String?,
+          );
     final weatherCode = (current['weather_code'] as num?)?.toInt();
-    final humidity = (current['relative_humidity_2m'] as num?)?.round() ?? 50;
-    final windSpeed = (current['wind_speed_10m'] as num?)?.toDouble() ?? 0.0;
-    final windDirection =
-        (current['wind_direction_10m'] as num?)?.toDouble() ?? 112.0;
+    final humidity = (current['relative_humidity_2m'] as num?)?.round();
+    final rawWindSpeed = (current['wind_speed_10m'] as num?)?.toDouble();
+    final windSpeed = rawWindSpeed == null
+        ? null
+        : _windMph(rawWindSpeed, currentUnits['wind_speed_10m'] as String?);
+    final windDirection = (current['wind_direction_10m'] as num?)?.toDouble();
 
-    final rawPressure =
-        (current['surface_pressure'] as num?)?.toDouble() ?? 1013.25;
+    if (feelsLike == null ||
+        !feelsLike.isFinite ||
+        weatherCode == null ||
+        humidity == null ||
+        windSpeed == null ||
+        !windSpeed.isFinite ||
+        windDirection == null ||
+        !windDirection.isFinite ||
+        current['time'] is! String) {
+      throw const FormatException(
+        'Weather response is missing required current conditions.',
+      );
+    }
+
+    final rawPressure = (current['surface_pressure'] as num?)?.toDouble();
+    if (rawPressure == null || !rawPressure.isFinite) {
+      throw const FormatException(
+        'Weather response is missing surface pressure.',
+      );
+    }
     // Open-Meteo returns hPa by default (1 hPa ≈ 0.02953 inHg). Convert if > 100.
-    final pressureInHg = rawPressure > 100
-        ? rawPressure * 0.02953
-        : rawPressure;
+    final pressureInHg = _pressureInHg(
+      rawPressure,
+      currentUnits['surface_pressure'] as String?,
+    );
 
     final dailyMaxList = (daily['temperature_2m_max'] as List<dynamic>?)
         ?.cast<num>();
@@ -136,50 +259,71 @@ class WeatherModel {
       );
     }
 
-    final high = dailyMaxList.first.toDouble();
-    final low = dailyMinList.first.toDouble();
-    final uvIndex = (dailyUvList != null && dailyUvList.isNotEmpty)
-        ? dailyUvList.first.round()
-        : 3;
+    final high = _temperatureF(
+      dailyMaxList.first.toDouble(),
+      dailyUnits['temperature_2m_max'] as String?,
+    );
+    final low = _temperatureF(
+      dailyMinList.first.toDouble(),
+      dailyUnits['temperature_2m_min'] as String?,
+    );
+    if (dailyUvList == null ||
+        dailyUvList.isEmpty ||
+        dailyRainList == null ||
+        dailyRainList.isEmpty ||
+        dailyPrecipProbList == null ||
+        dailyPrecipProbList.isEmpty ||
+        dailySunriseList == null ||
+        dailySunriseList.isEmpty ||
+        dailySunsetList == null ||
+        dailySunsetList.isEmpty) {
+      throw const FormatException(
+        'Weather response is missing required daily data.',
+      );
+    }
+    final uvIndex = dailyUvList.first.round();
     // Open-Meteo is queried with `precipitation_unit=inch`, so these values
     // are already inches. Converting again under-reports rainfall by ~25×.
-    final rawDailyRain = (dailyRainList != null && dailyRainList.isNotEmpty)
-        ? dailyRainList.first.toDouble()
-        : 0.80;
-    final totalRain = rawDailyRain.isFinite ? rawDailyRain : 0.80;
-    final precipProb =
-        (dailyPrecipProbList != null && dailyPrecipProbList.isNotEmpty)
-        ? dailyPrecipProbList.first.round().clamp(0, 100)
-        : 90;
+    final rawDailyRain = dailyRainList.first.toDouble();
+    if (!rawDailyRain.isFinite) {
+      throw const FormatException(
+        'Weather response has invalid precipitation.',
+      );
+    }
+    final totalRain = _precipitationInches(
+      rawDailyRain,
+      dailyUnits['precipitation_sum'] as String?,
+    );
+    final precipProb = dailyPrecipProbList.first.round().clamp(0, 100);
 
-    var sunriseStr = '5:36 AM';
-    var sunsetStr = '8:08 PM';
+    String? sunriseStr;
+    String? sunsetStr;
     DateTime? parsedSunrise;
     DateTime? parsedSunset;
-    if (dailySunriseList != null && dailySunriseList.isNotEmpty) {
-      final s = DateTime.tryParse(dailySunriseList.first);
-      if (s != null) {
-        parsedSunrise = s;
-        sunriseStr = _formatTime(s.hour, s.minute);
-      }
+    final sunrise = DateTime.tryParse(dailySunriseList.first);
+    if (sunrise != null) {
+      parsedSunrise = sunrise;
+      sunriseStr = _formatTime(sunrise.hour, sunrise.minute);
     }
-    if (dailySunsetList != null && dailySunsetList.isNotEmpty) {
-      final s = DateTime.tryParse(dailySunsetList.first);
-      if (s != null) {
-        parsedSunset = s;
-        sunsetStr = _formatTime(s.hour, s.minute);
-      }
+    final sunset = DateTime.tryParse(dailySunsetList.first);
+    if (sunset != null) {
+      parsedSunset = sunset;
+      sunsetStr = _formatTime(sunset.hour, sunset.minute);
+    }
+    if (sunriseStr == null || sunsetStr == null) {
+      throw const FormatException(
+        'Weather response has invalid solar timestamps.',
+      );
     }
 
-    String computedDaylight = '14h 32m';
-    if (parsedSunrise != null && parsedSunset != null) {
-      final diff = parsedSunset.difference(parsedSunrise);
-      if (!diff.isNegative && diff.inMinutes > 0) {
-        final hours = diff.inHours;
-        final minutes = diff.inMinutes.remainder(60);
-        computedDaylight = '${hours}h ${minutes}m';
-      }
+    final diff = parsedSunset!.difference(parsedSunrise!);
+    if (diff.isNegative || diff.inMinutes <= 0) {
+      throw const FormatException(
+        'Weather response has invalid daylight duration.',
+      );
     }
+    final computedDaylight =
+        '${diff.inHours}h ${diff.inMinutes.remainder(60)}m';
 
     final hourlyTimes =
         (hourly['time'] as List<dynamic>?)?.cast<String>() ?? <String>[];
@@ -191,9 +335,12 @@ class WeatherModel {
         (hourly['precipitation_probability'] as List<dynamic>?)?.cast<num>() ??
         <num>[];
 
-    if (hourlyTimes.isEmpty || hourlyTemps.isEmpty || hourlyCodes.isEmpty) {
+    if (hourlyTimes.isEmpty ||
+        hourlyTimes.length != hourlyTemps.length ||
+        hourlyTimes.length != hourlyCodes.length ||
+        hourlyTimes.length != hourlyPrecipProbs.length) {
       throw const FormatException(
-        'Weather response is missing hourly forecast data.',
+        'Weather response has incomplete hourly forecast data.',
       );
     }
 
@@ -230,15 +377,12 @@ class WeatherModel {
       final timeLabel = isNow
           ? 'NOW'
           : (parsedTime != null ? _formatHour(parsedTime.hour) : '+$i h');
-      final hTemp = idx < hourlyTemps.length
-          ? hourlyTemps[idx].toDouble()
-          : temp;
-      final hCode = idx < hourlyCodes.length
-          ? hourlyCodes[idx].toInt()
-          : weatherCode;
-      final hPrecipProb = idx < hourlyPrecipProbs.length
-          ? hourlyPrecipProbs[idx].round()
-          : (precipProb > 50 ? 70 : 20);
+      final hTemp = _temperatureF(
+        hourlyTemps[idx].toDouble(),
+        hourlyUnits['temperature_2m'] as String?,
+      );
+      final hCode = hourlyCodes[idx].toInt();
+      final hPrecipProb = hourlyPrecipProbs[idx].round().clamp(0, 100);
 
       final threat = hPrecipProb > 75
           ? 'high'
@@ -258,74 +402,77 @@ class WeatherModel {
 
     final cond = WeatherCondition.fromWmoCode(weatherCode);
     final summary = switch (cond) {
-      WeatherCondition.rain =>
-        'Rainy with a high chance of showers and precipitation.',
+      WeatherCondition.rain => 'Rain is currently reported for this location.',
       WeatherCondition.storm =>
-        'Severe storms and lightning expected this afternoon.',
-      WeatherCondition.snow =>
-        'Winter weather conditions with snowfall accumulation.',
+        'Thunderstorms are currently reported for this location.',
+      WeatherCondition.snow => 'Snow is currently reported for this location.',
       WeatherCondition.fog => 'Dense fog reducing visibility on roadways.',
-      WeatherCondition.cloudy => 'Overcast skies with mild breezes.',
+      WeatherCondition.cloudy =>
+        weatherCode == 3
+            ? 'Overcast skies are currently reported for this location.'
+            : 'Partly cloudy skies are currently reported for this location.',
       WeatherCondition.sunny =>
-        'Clear and comfortable conditions throughout the day.',
+        'Clear skies are currently reported for this location.',
     };
 
     final risk = (cond == WeatherCondition.storm)
         ? 'HIGH RISK'
         : (cond == WeatherCondition.rain ? 'MODERATE RISK' : 'LOW RISK');
 
-    final dailyTimes =
-        (daily['time'] as List<dynamic>?)?.cast<String>() ?? <String>[];
+    final dailyTimes = (daily['time'] as List<dynamic>?)?.cast<String>();
     final dailyWeatherCodes =
         (daily['weather_code'] as List<dynamic>?)?.cast<num>() ?? <num>[];
+
+    if (dailyTimes == null ||
+        dailyTimes.isEmpty ||
+        dailyTimes.length != dailyMaxList.length ||
+        dailyTimes.length != dailyMinList.length ||
+        dailyTimes.length != dailyWeatherCodes.length ||
+        dailyTimes.length != dailyUvList.length ||
+        dailyTimes.length != dailyRainList.length ||
+        dailyTimes.length != dailyPrecipProbList.length ||
+        dailyTimes.length != dailySunriseList.length ||
+        dailyTimes.length != dailySunsetList.length) {
+      throw const FormatException(
+        'Weather response has incomplete daily forecast data.',
+      );
+    }
 
     final dailyList = <DailyForecastItem>[];
     const weekdayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-    if (dailyMaxList.isNotEmpty) {
+    {
       final count = dailyMaxList.length;
       for (var i = 0; i < count && i < 7; i++) {
-        final dTimeStr = i < dailyTimes.length ? dailyTimes[i] : null;
-        final dDate = dTimeStr != null
-            ? DateTime.tryParse(dTimeStr)
-            : DateTime.now().add(Duration(days: i));
+        final dDate = DateTime.tryParse(dailyTimes[i]);
+        if (dDate == null) {
+          throw const FormatException(
+            'Weather response has invalid daily dates.',
+          );
+        }
 
         final dayLabel = i == 0
             ? 'Today'
-            : (i == 1
-                  ? 'Tomorrow'
-                  : (dDate != null
-                        ? weekdayNames[dDate.weekday - 1]
-                        : 'Day $i'));
+            : (i == 1 ? 'Tomorrow' : weekdayNames[dDate.weekday - 1]);
 
-        final dHigh = dailyMaxList[i].toDouble();
-        final dLow = i < dailyMinList.length
-            ? dailyMinList[i].toDouble()
-            : dHigh - 12.0;
-        final dCode =
-            (dailyWeatherCodes.isNotEmpty && i < dailyWeatherCodes.length)
-            ? dailyWeatherCodes[i].toInt()
-            : (i == 0 ? weatherCode : null);
+        final dHigh = _temperatureF(
+          dailyMaxList[i].toDouble(),
+          dailyUnits['temperature_2m_max'] as String?,
+        );
+        final dLow = _temperatureF(
+          dailyMinList[i].toDouble(),
+          dailyUnits['temperature_2m_min'] as String?,
+        );
+        final dCode = dailyWeatherCodes[i].toInt();
         final dCondition = WeatherCondition.fromWmoCode(dCode);
-        final dPrecip =
-            (dailyPrecipProbList != null && i < dailyPrecipProbList.length)
-            ? dailyPrecipProbList[i].round()
-            : (dCondition == WeatherCondition.rain
-                  ? 70
-                  : (dCondition == WeatherCondition.storm ? 85 : 10));
-        final dUv = (dailyUvList != null && i < dailyUvList.length)
-            ? dailyUvList[i].round()
-            : uvIndex;
-        final dRain = (dailyRainList != null && i < dailyRainList.length)
-            ? dailyRainList[i].toDouble()
-            : 0.0;
-        final dSunrise =
-            (dailySunriseList != null && i < dailySunriseList.length)
-            ? _formatDateTimeString(dailySunriseList[i])
-            : null;
-        final dSunset = (dailySunsetList != null && i < dailySunsetList.length)
-            ? _formatDateTimeString(dailySunsetList[i])
-            : null;
+        final dPrecip = dailyPrecipProbList[i].round().clamp(0, 100);
+        final dUv = dailyUvList[i].round();
+        final dRain = _precipitationInches(
+          dailyRainList[i].toDouble(),
+          dailyUnits['precipitation_sum'] as String?,
+        );
+        final dSunrise = _formatDateTimeString(dailySunriseList[i]);
+        final dSunset = _formatDateTimeString(dailySunsetList[i]);
 
         dailyList.add(
           DailyForecastItem(
@@ -343,31 +490,6 @@ class WeatherModel {
                 0.0,
             sunrise: dSunrise,
             sunset: dSunset,
-          ),
-        );
-      }
-    }
-
-    if (dailyList.isEmpty) {
-      final now = DateTime.now();
-      for (var i = 0; i < 7; i++) {
-        final date = now.add(Duration(days: i));
-        final label = i == 0
-            ? 'Today'
-            : (i == 1 ? 'Tomorrow' : weekdayNames[date.weekday - 1]);
-        dailyList.add(
-          DailyForecastItem(
-            dayLabel: label,
-            date: date,
-            condition: i == 0
-                ? cond
-                : (i % 2 == 0
-                      ? WeatherCondition.sunny
-                      : WeatherCondition.cloudy),
-            high: high + (i % 3 == 0 ? 2 : -2),
-            low: low + (i % 2 == 0 ? 1 : -1),
-            precipChance: i == 0 ? precipProb : (i * 10) % 40,
-            uvIndex: uvIndex,
           ),
         );
       }
@@ -413,9 +535,11 @@ class WeatherModel {
       whatToExpect: <String>[
         if (cond == WeatherCondition.rain) 'Bring an umbrella',
         if (cond == WeatherCondition.rain) 'Slick roads possible',
-        if (cond == WeatherCondition.storm) 'Thunderstorms this afternoon',
+        if (cond == WeatherCondition.storm) 'Thunderstorms possible',
         if (cond == WeatherCondition.snow) 'Winter road conditions',
-        'Plan for travel delays',
+        if (cond == WeatherCondition.fog) 'Reduced visibility possible',
+        if (cond == WeatherCondition.sunny || cond == WeatherCondition.cloudy)
+          'No significant precipitation currently reported',
       ],
       impactScores: <String, int>{
         'Driving': cond == WeatherCondition.rain ? 80 : 25,
@@ -425,17 +549,9 @@ class WeatherModel {
         'Flying Drones': cond == WeatherCondition.rain ? 15 : 85,
         'Photography': 25,
       },
-      hourly: hourlyList.isNotEmpty
-          ? hourlyList
-          : <HourlyForecast>[
-              HourlyForecast(
-                timeLabel: 'NOW',
-                temperature: temp,
-                condition: cond,
-                precipChance: precipProb,
-                isNow: true,
-              ),
-            ],
+      utcOffsetSeconds: utcOffsetSeconds,
+      wmoCode: weatherCode,
+      hourly: hourlyList,
       dailyForecasts: dailyList,
     );
   }
@@ -448,6 +564,28 @@ class WeatherModel {
       _ => value / 1609.344,
     };
   }
+
+  static double _temperatureF(double value, String? unit) => switch (unit) {
+    '°C' || 'C' => (value * 9 / 5) + 32,
+    _ => value,
+  };
+
+  static double _windMph(double value, String? unit) => switch (unit) {
+    'km/h' => value * 0.621371,
+    'm/s' => value * 2.23694,
+    _ => value,
+  };
+
+  static double _precipitationInches(double value, String? unit) =>
+      switch (unit) {
+        'mm' => value / 25.4,
+        _ => value,
+      };
+
+  static double _pressureInHg(double value, String? unit) => switch (unit) {
+    'hPa' || 'mbar' || null => value * 0.02953,
+    _ => value,
+  };
 
   Map<String, dynamic> toJson() => <String, dynamic>{
     'location': location,
@@ -473,6 +611,8 @@ class WeatherModel {
     'severeRisks': severeRisks,
     'whatToExpect': whatToExpect,
     'impactScores': impactScores,
+    'utcOffsetSeconds': utcOffsetSeconds,
+    'wmoCode': wmoCode,
     'hourly': hourly.map((HourlyForecast h) => h.toJson()).toList(),
     'dailyForecasts': dailyForecasts
         .map((DailyForecastItem d) => d.toJson())
@@ -539,6 +679,8 @@ class WeatherModel {
           'Flying Drones': 15,
           'Photography': 25,
         },
+    utcOffsetSeconds: (json['utcOffsetSeconds'] as num?)?.toInt() ?? 0,
+    wmoCode: (json['wmoCode'] as num?)?.toInt(),
     hourly: ((json['hourly'] as List<dynamic>?) ?? <dynamic>[])
         .map((dynamic e) => HourlyForecast.fromJson(e as Map<String, dynamic>))
         .toList(),

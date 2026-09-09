@@ -117,6 +117,57 @@ void main() {
     expect(provider.weather, isNull);
   });
 
+  test('rejects malformed cache rather than inventing conditions', () async {
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'weatheros_cached_weather_payload': jsonEncode(<String, dynamic>{
+        'location': 'New York',
+        'temperature': 70,
+      }),
+      'weatheros_cached_timestamp': DateTime.now().millisecondsSinceEpoch,
+      'weatheros_cached_location': WeatherCacheService.locationKey(
+        40.7128,
+        -74.0060,
+      ),
+    });
+    final provider = WeatherProvider(
+      repository: const WeatherRepository(service: _FailingWeatherService()),
+      cacheService: const WeatherCacheService(),
+      telemetryExporter: _discardTelemetry,
+    );
+    addTearDown(provider.dispose);
+
+    await provider.load();
+
+    expect(provider.state, WeatherLoadState.error);
+    expect(provider.weather, isNull);
+  });
+
+  test('rejects a cache with malformed nested forecast entries', () async {
+    final payload = MockWeather.newYorkRain.toJson()
+      ..['hourly'] = <Map<String, dynamic>>[
+        <String, dynamic>{'timeLabel': 'NOW'},
+      ];
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'weatheros_cached_weather_payload': jsonEncode(payload),
+      'weatheros_cached_timestamp': DateTime.now().millisecondsSinceEpoch,
+      'weatheros_cached_location': WeatherCacheService.locationKey(
+        40.7128,
+        -74.0060,
+      ),
+    });
+    final provider = WeatherProvider(
+      repository: const WeatherRepository(service: _FailingWeatherService()),
+      cacheService: const WeatherCacheService(),
+      telemetryExporter: _discardTelemetry,
+    );
+    addTearDown(provider.dispose);
+
+    await provider.load();
+
+    expect(provider.state, WeatherLoadState.error);
+    expect(provider.weather, isNull);
+  });
+
   test(
     'does not hydrate another location\'s fresh cache when offline',
     () async {

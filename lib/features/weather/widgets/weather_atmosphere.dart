@@ -41,6 +41,7 @@ class _WeatherAtmosphereState extends State<WeatherAtmosphere>
 
   WeatherCondition? _prevCondition;
   DayPeriod? _prevPeriod;
+  WeatherAtmosphereState? _prevAtmosphereState;
   late final AnimationController _fadeController = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 400),
@@ -73,15 +74,30 @@ class _WeatherAtmosphereState extends State<WeatherAtmosphere>
     super.didUpdateWidget(oldWidget);
     final oldPeriod = _resolvePeriodFor(oldWidget.customHour);
     final newPeriod = _resolvePeriod();
-    if (oldWidget.condition != widget.condition || oldPeriod != newPeriod) {
+    if (oldWidget.condition != widget.condition ||
+        oldPeriod != newPeriod ||
+        _hasVisualStateChanged(
+          oldWidget.atmosphereState,
+          widget.atmosphereState,
+        )) {
       _prevCondition = oldWidget.condition;
       _prevPeriod = oldPeriod;
+      _prevAtmosphereState = oldWidget.atmosphereState;
       _fadeController.forward(from: 0.0);
     }
     if (oldWidget.animationProgress != widget.animationProgress) {
       _syncMotion();
     }
   }
+
+  bool _hasVisualStateChanged(
+    WeatherAtmosphereState? previous,
+    WeatherAtmosphereState? current,
+  ) =>
+      previous?.conditionFamily != current?.conditionFamily ||
+      previous?.daylightPhase != current?.daylightPhase ||
+      previous?.isOvercast != current?.isOvercast ||
+      previous?.isHeavyPrecipitation != current?.isHeavyPrecipitation;
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
@@ -164,7 +180,7 @@ class _WeatherAtmosphereState extends State<WeatherAtmosphere>
                         condition: _prevCondition!,
                         period: _prevPeriod!,
                         progress: progress,
-                        atmosphereState: widget.atmosphereState,
+                        atmosphereState: _prevAtmosphereState,
                       ),
                       child: const SizedBox.expand(),
                     ),
@@ -206,7 +222,8 @@ class _AtmospherePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final bounds = Offset.zero & size;
-    final effectiveState = atmosphereState ??
+    final effectiveState =
+        atmosphereState ??
         WeatherAtmosphereState.fromWeather(
           WeatherModel(
             location: 'Current Location',
@@ -238,13 +255,19 @@ class _AtmospherePainter extends CustomPainter {
 
     final motionBoost = effectiveState.windIntensity;
     final modulatedProgress = progress + motionBoost * 0.2;
-    canvas.drawRect(bounds, Paint()..shader = _background(bounds, effectiveState));
+    canvas.drawRect(
+      bounds,
+      Paint()..shader = _background(bounds, effectiveState),
+    );
 
-    final isNight = period == DayPeriod.night ||
+    final isNight =
+        period == DayPeriod.night ||
         effectiveState.daylightPhase == DaylightPhase.night;
-    final isDawn = period == DayPeriod.dawn ||
+    final isDawn =
+        period == DayPeriod.dawn ||
         effectiveState.daylightPhase == DaylightPhase.dawn;
-    final isSunset = period == DayPeriod.sunset ||
+    final isSunset =
+        period == DayPeriod.sunset ||
         effectiveState.daylightPhase == DaylightPhase.sunset;
 
     if (isNight) {
@@ -369,11 +392,12 @@ class _AtmospherePainter extends CustomPainter {
   }
 
   Shader _background(Rect bounds, WeatherAtmosphereState state) {
-    final isNight = period == DayPeriod.night ||
-        state.daylightPhase == DaylightPhase.night;
-    final isDawn = period == DayPeriod.dawn ||
-        state.daylightPhase == DaylightPhase.dawn;
-    final isSunset = period == DayPeriod.sunset ||
+    final isNight =
+        period == DayPeriod.night || state.daylightPhase == DaylightPhase.night;
+    final isDawn =
+        period == DayPeriod.dawn || state.daylightPhase == DaylightPhase.dawn;
+    final isSunset =
+        period == DayPeriod.sunset ||
         state.daylightPhase == DaylightPhase.sunset;
 
     if (isNight) {
@@ -447,19 +471,20 @@ class _AtmospherePainter extends CustomPainter {
 
     // Daytime gradients
     final colors = switch (state.conditionFamily) {
-      WeatherConditionFamily.rain => state.isHeavyPrecipitation
-          ? <Color>[
-              const Color(0xFF0C1622),
-              const Color(0xFF162638),
-              WeatherPalette.lensLift.withValues(alpha: 0.8),
-              WeatherPalette.canvasNavy,
-            ]
-          : <Color>[
-              WeatherPalette.canvasDeep,
-              WeatherPalette.canvasNavy,
-              WeatherPalette.lensLift.withValues(alpha: 0.9),
-              WeatherPalette.canvasNavy,
-            ],
+      WeatherConditionFamily.rain =>
+        state.isHeavyPrecipitation
+            ? <Color>[
+                const Color(0xFF0C1622),
+                const Color(0xFF162638),
+                WeatherPalette.lensLift.withValues(alpha: 0.8),
+                WeatherPalette.canvasNavy,
+              ]
+            : <Color>[
+                WeatherPalette.canvasDeep,
+                WeatherPalette.canvasNavy,
+                WeatherPalette.lensLift.withValues(alpha: 0.9),
+                WeatherPalette.canvasNavy,
+              ],
       WeatherConditionFamily.clear => <Color>[
         WeatherPalette.canvasNavy,
         WeatherPalette.mistBlue.withValues(alpha: 0.75),
@@ -472,19 +497,20 @@ class _AtmospherePainter extends CustomPainter {
         WeatherPalette.lensLift,
         WeatherPalette.canvasNavy,
       ],
-      WeatherConditionFamily.cloudy => state.isOvercast
-          ? <Color>[
-              const Color(0xFF141D29),
-              const Color(0xFF223042),
-              WeatherPalette.lensCore.withValues(alpha: 0.9),
-              WeatherPalette.canvasDeep,
-            ]
-          : <Color>[
-              WeatherPalette.canvasDeep,
-              WeatherPalette.lensCore,
-              WeatherPalette.lensLift.withValues(alpha: 0.85),
-              WeatherPalette.canvasDeep,
-            ],
+      WeatherConditionFamily.cloudy =>
+        state.isOvercast
+            ? <Color>[
+                const Color(0xFF141D29),
+                const Color(0xFF223042),
+                WeatherPalette.lensCore.withValues(alpha: 0.9),
+                WeatherPalette.canvasDeep,
+              ]
+            : <Color>[
+                WeatherPalette.canvasDeep,
+                WeatherPalette.lensCore,
+                WeatherPalette.lensLift.withValues(alpha: 0.85),
+                WeatherPalette.canvasDeep,
+              ],
       WeatherConditionFamily.snow => <Color>[
         WeatherPalette.canvasNavy,
         const Color(0xFF1E3A56),
@@ -518,18 +544,22 @@ class _AtmospherePainter extends CustomPainter {
     double drawProgress,
     WeatherAtmosphereState state,
   ) {
-    if (state.isOvercast || state.conditionFamily == WeatherConditionFamily.fog) {
+    if (state.isOvercast ||
+        state.conditionFamily == WeatherConditionFamily.fog) {
       return;
     }
     final starPaint = Paint()..style = PaintingStyle.fill;
-    final baseCount = state.conditionFamily == WeatherConditionFamily.clear ? 56 : 28;
+    final baseCount = state.conditionFamily == WeatherConditionFamily.clear
+        ? 56
+        : 28;
     for (var i = 0; i < baseCount; i++) {
       final seedX = ((i * 37.17) % 1.0);
       final seedY = ((i * 59.41) % 0.65);
       final x = size.width * seedX;
       final y = size.height * seedY;
       final twinkle =
-          0.35 + 0.65 * math.sin((drawProgress * 6 * math.pi) + (i * 1.8)).abs();
+          0.35 +
+          0.65 * math.sin((drawProgress * 6 * math.pi) + (i * 1.8)).abs();
       final radius = (i % 4 == 0) ? 1.5 : 0.9;
 
       starPaint.color = Colors.white.withValues(alpha: twinkle * 0.8);
@@ -708,12 +738,16 @@ class _AtmospherePainter extends CustomPainter {
   }) {
     final snowPaint = Paint()..style = PaintingStyle.fill;
     final windFactor = effectiveState.windDirection;
-    final windDrift = math.cos((windFactor - 180.0) * math.pi / 180.0) *
+    final windDrift =
+        math.cos((windFactor - 180.0) * math.pi / 180.0) *
         effectiveState.windIntensity *
         24;
 
     final snowCount =
-        (60 * (effectiveState.precipitationIntensity > 0 ? effectiveState.precipitationIntensity : 0.5))
+        (60 *
+                (effectiveState.precipitationIntensity > 0
+                    ? effectiveState.precipitationIntensity
+                    : 0.5))
             .round()
             .clamp(20, 90);
     for (var index = 0; index < snowCount; index++) {
@@ -747,7 +781,8 @@ class _AtmospherePainter extends CustomPainter {
     // More layers for thicker fog
     final layerCount = (4 + (fogIntensity * 3)).round().clamp(4, 8);
     for (var i = 0; i < layerCount; i++) {
-      final drift = math.sin((drawProgress + i * 0.25) * 2 * math.pi) *
+      final drift =
+          math.sin((drawProgress + i * 0.25) * 2 * math.pi) *
           (size.width * (0.05 + fogIntensity * 0.08));
       final y = size.height * (0.42 + i * 0.14);
       fogPaint.color = WeatherPalette.lensLift.withValues(alpha: baseAlpha);
@@ -783,15 +818,22 @@ class _AtmospherePainter extends CustomPainter {
       final seed = (i * 0.718) % 1.0;
       final y = size.height * (0.15 + (i * 0.05) % 0.7);
       final speed = 0.4 + (i % 3) * 0.25;
-      final xOffset = (drawProgress * speed * (dirX >= 0 ? 1.0 : -1.0) + seed) % 1.0;
+      final xOffset =
+          (drawProgress * speed * (dirX >= 0 ? 1.0 : -1.0) + seed) % 1.0;
       final startX = size.width * xOffset;
-      final length = size.width * (0.12 + (i % 4) * 0.04) * (0.8 + windSpeedFactor * 0.5);
+      final length =
+          size.width * (0.12 + (i % 4) * 0.04) * (0.8 + windSpeedFactor * 0.5);
       final alpha = (0.12 + (i % 3) * 0.06) * windSpeedFactor;
 
-      streakPaint.color = WeatherPalette.mistBlue.withValues(alpha: alpha.clamp(0.0, 0.45));
+      streakPaint.color = WeatherPalette.mistBlue.withValues(
+        alpha: alpha.clamp(0.0, 0.45),
+      );
       canvas.drawLine(
         Offset(startX, y),
-        Offset(startX + (dirX >= 0 ? length : -length), y + (i.isEven ? 4 : -4)),
+        Offset(
+          startX + (dirX >= 0 ? length : -length),
+          y + (i.isEven ? 4 : -4),
+        ),
         streakPaint,
       );
     }

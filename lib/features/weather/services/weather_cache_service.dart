@@ -25,7 +25,8 @@ class WeatherCacheService {
         return null;
       }
       final dynamic decoded = jsonDecode(jsonString);
-      if (decoded is Map<String, dynamic>) {
+      if (decoded is Map<String, dynamic> &&
+          WeatherModel.isCompleteCachePayload(decoded)) {
         return WeatherModel.fromJson(decoded);
       }
     } on Object {

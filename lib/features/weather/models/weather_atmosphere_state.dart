@@ -1,15 +1,7 @@
 import 'weather_condition.dart';
 import 'weather_model.dart';
 
-enum WeatherConditionFamily {
-  clear,
-  cloudy,
-  rain,
-  storm,
-  snow,
-  fog,
-  wind,
-}
+enum WeatherConditionFamily { clear, cloudy, rain, storm, snow, fog, wind }
 
 enum DaylightPhase { night, dawn, day, sunset }
 
@@ -46,26 +38,33 @@ class WeatherAtmosphereState {
     WeatherModel weather, {
     DateTime? now,
   }) {
-    final currentTime = now ?? DateTime.now();
+    final currentTime = weather.locationNow(now: now);
     final daylightPhase = _resolveDaylightPhase(
       currentTime,
       sunriseTime: weather.sunriseTime,
       sunsetTime: weather.sunsetTime,
     );
 
-    final isOvercast = weather.condition == WeatherCondition.cloudy &&
-        (weather.humidity >= 60 ||
-            weather.uvIndex <= 3 ||
-            weather.dailySummary.toLowerCase().contains('overcast'));
+    // WMO 1/2 are mainly clear/partly cloudy; WMO 3 is overcast. Preserve
+    // that visual distinction after normalizing into the app's condition enum.
+    final isOvercast =
+        weather.condition == WeatherCondition.cloudy &&
+        (weather.wmoCode == 3 ||
+            (weather.wmoCode == null &&
+                (weather.humidity >= 60 ||
+                    weather.uvIndex <= 3 ||
+                    weather.dailySummary.toLowerCase().contains('overcast'))));
 
-    final isHeavyPrecipitation = (weather.condition == WeatherCondition.rain ||
+    final isHeavyPrecipitation =
+        (weather.condition == WeatherCondition.rain ||
             weather.condition == WeatherCondition.storm) &&
         (weather.totalRainInches >= 0.35 ||
             weather.precipChance >= 75 ||
             (weather.impactScores['Weather'] ?? 0) >= 3 ||
             weather.dailySummary.toLowerCase().contains('heavy'));
 
-    final isHighWind = weather.windSpeedMph >= 20.0 &&
+    final isHighWind =
+        weather.windSpeedMph >= 20.0 &&
         (weather.condition == WeatherCondition.sunny ||
             weather.condition == WeatherCondition.cloudy);
 
@@ -91,33 +90,43 @@ class WeatherAtmosphereState {
     };
 
     final precipitationIntensity = switch (conditionFamily) {
-      WeatherConditionFamily.rain => isHeavyPrecipitation
-          ? (weather.precipChance / 100.0).clamp(0.65, 1.0)
-          : (weather.precipChance / 100.0).clamp(0.15, 0.75),
-      WeatherConditionFamily.storm =>
-        (weather.precipChance / 100.0).clamp(0.70, 1.0),
-      WeatherConditionFamily.snow =>
-        (weather.precipChance / 100.0).clamp(0.20, 1.0),
+      WeatherConditionFamily.rain =>
+        isHeavyPrecipitation
+            ? (weather.precipChance / 100.0).clamp(0.65, 1.0)
+            : (weather.precipChance / 100.0).clamp(0.15, 0.75),
+      WeatherConditionFamily.storm => (weather.precipChance / 100.0).clamp(
+        0.70,
+        1.0,
+      ),
+      WeatherConditionFamily.snow => (weather.precipChance / 100.0).clamp(
+        0.20,
+        1.0,
+      ),
       _ => 0.0,
     };
 
     final windIntensity = (weather.windSpeedMph / 35.0).clamp(0.0, 1.0);
     final visibilityFactor = (weather.visibilityMiles / 10.0).clamp(0.0, 1.0);
-    final temperatureCharacter =
-        ((weather.temperature - 50.0) / 40.0).clamp(-1.0, 1.0);
+    final temperatureCharacter = ((weather.temperature - 50.0) / 40.0).clamp(
+      -1.0,
+      1.0,
+    );
 
     final severeBase = weather.severeRisks.isEmpty
         ? 0.0
-        : weather.severeRisks.values
-                .fold<double>(0.0, (sum, value) => sum + value) /
-            weather.severeRisks.length;
+        : weather.severeRisks.values.fold<double>(
+                0.0,
+                (sum, value) => sum + value,
+              ) /
+              weather.severeRisks.length;
     final riskLevelBoost = switch (weather.riskLevel.toUpperCase()) {
       'HIGH RISK' => 0.8,
       'MODERATE RISK' => 0.4,
       _ => 0.0,
     };
-    final severeIntensity =
-        severeBase > 0 ? severeBase : riskLevelBoost.clamp(0.0, 1.0);
+    final severeIntensity = severeBase > 0
+        ? severeBase
+        : riskLevelBoost.clamp(0.0, 1.0);
 
     final storyLine = _buildStoryLine(
       conditionFamily: conditionFamily,
@@ -219,30 +228,32 @@ class WeatherAtmosphereState {
 
     return switch (conditionFamily) {
       WeatherConditionFamily.clear => switch (daylightPhase) {
-          DaylightPhase.night =>
-            'Clear night skies with star visibility and a $tempFeel atmosphere.',
-          DaylightPhase.dawn =>
-            'Dawn light breaking over clear skies with a fresh $tempFeel feel.',
-          DaylightPhase.sunset =>
-            'Golden hour sunset with radiant horizons and steady conditions.',
-          DaylightPhase.day =>
-            'Luminous clear skies with open sunshine and a $tempFeel atmosphere.',
-        },
-      WeatherConditionFamily.cloudy => isOvercast
-          ? 'Overcast cloud cover filtering solar radiance with cool, steady air.'
-          : 'Partly cloudy skies with bright sun breaks and layered cloud motion.',
-      WeatherConditionFamily.rain => isHeavyPrecipitation
-          ? 'Heavy steady rainfall with lowered visibility and saturated air.'
-          : 'Light rain passing through with damp atmospheric mist.',
-      WeatherConditionFamily.storm =>
-        'Severe thunderstorm activity with heavy precipitation, lightning risk, and gusty winds.',
+        DaylightPhase.night =>
+          'Clear night skies with star visibility and a $tempFeel atmosphere.',
+        DaylightPhase.dawn =>
+          'Dawn light breaking over clear skies with a fresh $tempFeel feel.',
+        DaylightPhase.sunset =>
+          'Golden hour sunset with radiant horizons and steady conditions.',
+        DaylightPhase.day =>
+          'Luminous clear skies with open sunshine and a $tempFeel atmosphere.',
+      },
+      WeatherConditionFamily.cloudy =>
+        isOvercast
+            ? 'Overcast cloud cover filtering solar radiance with cool, steady air.'
+            : 'Partly cloudy skies with bright sun breaks and layered cloud motion.',
+      WeatherConditionFamily.rain =>
+        isHeavyPrecipitation
+            ? 'Heavy steady rainfall with lowered visibility and saturated air.'
+            : 'Light rain passing through with damp atmospheric mist.',
+      WeatherConditionFamily.storm => 'Severe thunderstorm activity with heavy precipitation, lightning risk, and gusty winds.',
       WeatherConditionFamily.snow =>
         'Active snowfall with cold crisp air and layered winter diffusion.',
       WeatherConditionFamily.fog =>
         'Dense fog bank softening horizon lines and reducing visibility.',
-      WeatherConditionFamily.wind => windSpeedMph >= 18
-          ? 'High atmospheric winds shaping rapid cloud drift and strong air currents.'
-          : 'Breezy conditions keeping the atmosphere moving throughout the day.',
+      WeatherConditionFamily.wind =>
+        windSpeedMph >= 18
+            ? 'High atmospheric winds shaping rapid cloud drift and strong air currents.'
+            : 'Breezy conditions keeping the atmosphere moving throughout the day.',
     };
   }
 }

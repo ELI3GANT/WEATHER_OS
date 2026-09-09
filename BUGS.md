@@ -1,6 +1,6 @@
 # WeatherOS Bugs
 
-_Last updated: 2026-09-08. Only reproduced or source-proven issues are listed. A passing compile is never treated as device verification._
+_Last updated: 2026-09-09. Only reproduced or source-proven issues are listed. A passing compile is never treated as device verification._
 
 | ID | Severity | Area | Reproduction | Root Cause | Fix | Verification | Status |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -38,9 +38,11 @@ _Last updated: 2026-09-08. Only reproduced or source-proven issues are listed. A
 | --- | --- | --- | --- | --- | --- |
 | WOS-000 | P1 | UI rollback | Preserved Flagship work on `backup/flagship-dashboard-20260908` (`560ad25`) and restored exact pre-Flagship `5de1cb8` UI without reset/discard. | Git ancestry and source wiring checked. | Fixed |
 | WOS-007 | P1 | Daily precipitation | Removed second inch conversion from headline and daily-row precipitation. | Focused Open-Meteo suite passes. | Fixed |
-| WOS-008 | P1 | Visibility | Request visibility in metres and convert once to miles at parser boundary. | Focused Open-Meteo suite passes. | Fixed |
-| WOS-009 | P1 | Malformed API data | Reject incomplete Open-Meteo payloads instead of synthesizing weather from defaults. | Parser/provider tests pass. | Fixed |
+| WOS-008 | P1 | Visibility | Read Open-Meteo `current_units.visibility` and convert feet or metres once to miles at the parser boundary. | Live Boston and Tokyo responses plus unit regressions pass. | Fixed |
+| WOS-009 | P1 | Malformed API data | Reject incomplete, invalid, and mismatched Open-Meteo current/hourly/daily payloads instead of synthesizing weather from defaults. | Parser/provider tests pass. | Fixed |
 | WOS-002 | P1 | Cache/data freshness | Apply the existing 15-minute TTL before cold-start cache hydration. | Fresh and expired offline-cache provider tests pass. | Fixed |
 | WOS-010 | P1 | Hourly timezone | Anchor hourly selection to Open-Meteo `current.time`, not host-local time. | Cross-timezone regression test passes. | Fixed |
 | WOS-003 | P1 | Cache/location identity | Search another city, close app, then start offline at a different location. | One global payload/key had no coordinate identity, so cold start could surface weather for a prior city. | Persist a four-decimal coordinate key and hydrate only when it matches the resolved request; legacy unscoped cache entries are rejected. | Offline cross-city regression test and full non-golden suite pass; device verification pending. | Fixed — source verified |
 | WOS-015 | P1 | Open-Meteo visibility units | Load WeatherOS's imperial Open-Meteo query and compare visibility to `current_units.visibility`. | The request returns feet, but the parser treated every result as metres, overstating visibility by 3.28×. | Convert feet or metres according to response metadata, with metres as the backward-compatible fallback. | Live Boston response: 65,944.884 ft → 12.49 mi; feet/metres regression test and full non-golden suite pass. | Fixed — source/live verified |
+| WOS-016 | P1 | Weather data integrity | Provide missing, malformed, or mismatched current/hourly/daily fields; open corrupt cached forecast data. | Parser and cache deserializers previously substituted plausible weather, dates, and forecast rows. | Require all queried fields/array lengths, validate cached forecast structure, and surface the existing unavailable state. | Metric/imperial, malformed payload, mismatched-array, malformed-cache, and full non-golden regressions pass. | Fixed — source verified |
+| WOS-017 | P2 | Timezone/atmosphere presentation | Search a city outside the host timezone or update partly-cloudy/overcast conditions. | Header/atmosphere used host time; WMO cloud codes 1/2/3 collapsed to a generic overcast visual; transitions could paint prior condition with new-state parameters. | Persist Open-Meteo UTC offset and raw WMO code, use location-local time, distinguish partly cloudy from overcast, and crossfade preserved prior state. | Live Tokyo UTC+09 metadata verified; deterministic parser/atmosphere regressions and full non-golden suite pass. Device visual QA pending. | Fixed — source/live verified |

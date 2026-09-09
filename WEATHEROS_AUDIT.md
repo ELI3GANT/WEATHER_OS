@@ -123,14 +123,14 @@ the restored source.
 - Fixed and verified: Open-Meteo precipitation is requested in inches and is
   now retained as inches instead of being converted a second time. The focused
   Open-Meteo/provider test file passes (6 tests).
-- A live Open-Meteo request using the app's production query shape returned
+- Live Open-Meteo requests using the app's production query shape returned
   valid current, hourly, and daily payloads. The September 8 Boston sample
   returned Fahrenheit temperatures, mph wind, inch precipitation, hPa pressure,
   America/New_York timestamps, and `visibility=65944.884 ft`.
 - The parser now reads Open-Meteo `current_units.visibility`: that Boston value
   correctly becomes 12.49 mi rather than 40.98 mi. Regression coverage handles
   both feet and metres.
-- The restored app has passed all 49 current non-golden tests covering startup,
+- The restored app has passed all 56 current non-golden tests covering startup,
   current conditions, location switching and dialog entry, provider refresh,
   accessibility layout, UI polish, cache behavior, and Open-Meteo parsing.
 - Cache cold starts now honor the existing 15-minute TTL: a fresh cached
@@ -140,9 +140,21 @@ the restored source.
   offline cold start only shows it when the resolved location matches, preventing
   a previous searched city from masquerading as the current city. Legacy cache
   entries without an identity are safely ignored.
+- Parser integrity is strict at the live-data boundary: every requested
+  current/daily/hourly field must exist, timestamps and array lengths must be
+  coherent, and malformed input reaches the existing error state instead of
+  fabricated weather. Cache hydration similarly rejects corrupt nested forecast
+  entries.
 - Hourly selection now uses Open-Meteo's location-local `current.time`, rather
   than the host clock, so a searched city in another timezone does not skip
   upcoming hourly rows.
+- Weather models retain Open-Meteo's `utc_offset_seconds` and raw WMO code.
+  The header and atmosphere use location-local time for searched cities; WMO 2
+  keeps a partly-cloudy scene while WMO 3 uses overcast. Live Tokyo verification
+  returned `Asia/Tokyo`, UTC+09:00, and aligned 168-hour/7-day response arrays.
+- Atmosphere updates crossfade the prior visual state, including overcast/heavy
+  precipitation changes. Selecting an hourly forecast derives a background from
+  that selected condition rather than reusing the current-condition state.
 - The full test suite has reproducible golden failures: the showcase golden cases have large pixel diffs (roughly 95–99%) and `home_large_text_lower` has a 0.10% / 320-pixel diff. These were not updated or masked.
 - Source-built primary-screen visual inspection on the LG G7 remains pending
   the Android AAPT2 host-environment fix. The currently installed app is not
@@ -156,6 +168,9 @@ the restored source.
 3. Decide whether WidgetKit/watchOS are product requirements. If so, create and sign real extension targets, entitlements, App Group provisioning, and focused tests as a deliberate capability project—not as an incidental fix.
 4. Use macOS/Xcode to build the exact restored revision and test iPhone lifecycle, permission, cache, layout, and live data without replacing the App Store installation prematurely.
 5. Complete the explicit Apple-side beta identifier/app/workflow setup, then use TestFlight as the recurrent iPhone QA channel.
+6. Run the source-built beta on iPhone and LG G7 to inspect the corrected
+   location-local header/atmosphere transitions, motion cost, and text contrast;
+   static/widget tests cannot replace hardware evidence.
 
 ## Subsystem map: input → transformation → state → UI
 
@@ -166,8 +181,8 @@ the restored source.
 - **Search:** `LocationSearchService` calls Open-Meteo geocoding, validates the
   first result, then passes it to `WeatherProvider.setLocation`.
 - **Open-Meteo:** the service requests imperial weather fields; the model
-  converts pressure and response-labelled visibility once and retains inch
-  precipitation.
+  validates queried arrays and normalizes response-labelled metric or imperial
+  temperature, wind, precipitation, pressure, and visibility once.
 - **Cache:** SharedPreferences stores one payload with a timestamp and rounded
   coordinate identity; it is used for up to 15 minutes only when it matches the
   resolved request.

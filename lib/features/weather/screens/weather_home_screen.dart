@@ -85,7 +85,9 @@ class _WeatherHomeScreenState extends State<WeatherHomeScreen> {
 
   @override
   void dispose() {
-    WeatherPreferencesService.instance.removeListener(_handlePreferencesChanged);
+    WeatherPreferencesService.instance.removeListener(
+      _handlePreferencesChanged,
+    );
     _tabSub?.cancel();
     _headerActionSub?.cancel();
     super.dispose();
@@ -203,8 +205,7 @@ class _WeatherHomeScreenState extends State<WeatherHomeScreen> {
     return null;
   }
 
-  String _formatTodayHeaderDate() {
-    final now = widget.currentTime ?? DateTime.now();
+  String _formatTodayHeaderDate(DateTime now) {
     const months = [
       'Jan',
       'Feb',
@@ -236,6 +237,7 @@ class _WeatherHomeScreenState extends State<WeatherHomeScreen> {
     int? activeHour;
 
     if (weather != null) {
+      final locationNow = weather.locationNow(now: widget.currentTime);
       if (_selectedForecastIndex > 0 &&
           _selectedForecastIndex < weather.hourly.length) {
         final forecast = weather.hourly[_selectedForecastIndex];
@@ -243,16 +245,21 @@ class _WeatherHomeScreenState extends State<WeatherHomeScreen> {
         activeHour = _parseHourFromLabel(forecast.timeLabel);
       } else {
         activeCondition = weather.condition;
-        activeHour = (widget.currentTime ?? DateTime.now()).hour;
+        activeHour = locationNow.hour;
       }
     }
 
     final alertCount = _getAlertCount(weather);
     final sceneWeather = weather ?? MockWeather.newYorkRain;
-    final atmosphereState = WeatherAtmosphereState.fromWeather(
-      sceneWeather,
-      now: widget.currentTime ?? DateTime.now(),
-    );
+    // An hourly selection has its own condition. Let the atmosphere derive a
+    // matching fallback state instead of retaining the current-condition
+    // background (for example, clear now but rain at the selected hour).
+    final atmosphereState = _selectedForecastIndex > 0
+        ? null
+        : WeatherAtmosphereState.fromWeather(
+            sceneWeather,
+            now: widget.currentTime,
+          );
 
     return PopScope(
       canPop: _currentTab == WeatherNavTab.today,
@@ -265,78 +272,82 @@ class _WeatherHomeScreenState extends State<WeatherHomeScreen> {
       },
       child: Scaffold(
         body: Stack(
-        fit: StackFit.expand,
-        children: <Widget>[
-          Positioned.fill(
-            child: WeatherAtmosphere(
-              condition: activeCondition,
-              customHour: activeHour,
-              animationProgress: widget.atmosphereProgress,
-              atmosphereState: atmosphereState,
+          fit: StackFit.expand,
+          children: <Widget>[
+            Positioned.fill(
+              child: WeatherAtmosphere(
+                condition: activeCondition,
+                customHour: activeHour,
+                animationProgress: widget.atmosphereProgress,
+                atmosphereState: atmosphereState,
+              ),
             ),
-          ),
-          SafeArea(
-            bottom: false,
-            child: ValueListenableBuilder<NativeInsets>(
-              valueListenable: WeatherNativeUIBridge.instance.insetsNotifier,
-              builder:
-                  (BuildContext context, NativeInsets insets, Widget? child) {
-                    return Column(
-                      children: <Widget>[
-                        // Top Platform Header Bar
-                        if (weather != null)
-                          WeatherPlatformHeader(
-                            location: weather.location,
-                            dateSubtitle: _formatTodayHeaderDate(),
-                            isOffline: provider.isOffline,
-                            onSettingsPressed: _openSettingsModal,
-                            onLocationPressed: _openLocationChooser,
+            SafeArea(
+              bottom: false,
+              child: ValueListenableBuilder<NativeInsets>(
+                valueListenable: WeatherNativeUIBridge.instance.insetsNotifier,
+                builder:
+                    (BuildContext context, NativeInsets insets, Widget? child) {
+                      return Column(
+                        children: <Widget>[
+                          // Top Platform Header Bar
+                          if (weather != null)
+                            WeatherPlatformHeader(
+                              location: weather.location,
+                              dateSubtitle: _formatTodayHeaderDate(
+                                weather.locationNow(now: widget.currentTime),
+                              ),
+                              isOffline: provider.isOffline,
+                              onSettingsPressed: _openSettingsModal,
+                              onLocationPressed: _openLocationChooser,
+                            ),
+
+                          // Main Tab Content
+                          Expanded(
+                            child: Padding(
+                              padding: EdgeInsets.only(
+                                bottom:
+                                    (WeatherPlatform.isIOS(context) &&
+                                        WeatherNativeUIBridge
+                                            .instance
+                                            .isNativeBridgeAvailable)
+                                    ? insets.bottom
+                                    : 0.0,
+                              ),
+                              child: RepaintBoundary(
+                                key: const ValueKey<String>(
+                                  'weather-content-boundary',
+                                ),
+                                child: _WeatherTabBody(
+                                  provider: provider,
+                                  currentTab: _currentTab,
+                                  selectedForecastIndex: _selectedForecastIndex,
+                                  onForecastSelected: _onForecastSelected,
+                                ),
+                              ),
+                            ),
                           ),
 
-                        // Main Tab Content
-                        Expanded(
-                          child: Padding(
-                            padding: EdgeInsets.only(
-                              bottom:
-                                  (WeatherPlatform.isIOS(context) &&
-                                      WeatherNativeUIBridge
-                                          .instance
-                                          .isNativeBridgeAvailable)
-                                  ? insets.bottom
-                                  : 0.0,
+                          // Platform Navigation Bar (M3 on Android, suppressed/fallback on iOS)
+                          if (provider.state == WeatherLoadState.loaded)
+                            WeatherPlatformNavigationBar(
+                              currentTab: _currentTab,
+                              onTabSelected: _onTabSelected,
+                              alertCount: alertCount,
+                              showRadar: WeatherPreferencesService
+                                  .instance
+                                  .showRadarTab,
                             ),
-                            child: RepaintBoundary(
-                              key: const ValueKey<String>(
-                                'weather-content-boundary',
-                              ),
-                              child: _WeatherTabBody(
-                                provider: provider,
-                                currentTab: _currentTab,
-                                selectedForecastIndex: _selectedForecastIndex,
-                                onForecastSelected: _onForecastSelected,
-                              ),
-                            ),
-                          ),
-                        ),
-
-                        // Platform Navigation Bar (M3 on Android, suppressed/fallback on iOS)
-                        if (provider.state == WeatherLoadState.loaded)
-                          WeatherPlatformNavigationBar(
-                            currentTab: _currentTab,
-                            onTabSelected: _onTabSelected,
-                            alertCount: alertCount,
-                            showRadar: WeatherPreferencesService.instance.showRadarTab,
-                          ),
-                      ],
-                    );
-                  },
+                        ],
+                      );
+                    },
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 }
 
 class _WeatherTabBody extends StatelessWidget {
@@ -615,12 +626,8 @@ class _LocationInputDialogState extends State<_LocationInputDialog> {
           onPressed: () => Navigator.of(context).pop(),
           child: const Text('Cancel'),
         ),
-        FilledButton(
-          onPressed: _submit,
-          child: const Text('Use location'),
-        ),
+        FilledButton(onPressed: _submit, child: const Text('Use location')),
       ],
     );
   }
 }
-
