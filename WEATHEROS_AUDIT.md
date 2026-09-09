@@ -130,7 +130,7 @@ the restored source.
 - The parser now reads Open-Meteo `current_units.visibility`: that Boston value
   correctly becomes 12.49 mi rather than 40.98 mi. Regression coverage handles
   both feet and metres.
-- The restored app has passed all 62 current non-golden tests covering startup,
+- The restored app has passed all 63 current non-golden tests covering startup,
   current conditions, location switching and dialog entry, provider refresh,
   accessibility layout, UI polish, cache behavior, and Open-Meteo parsing.
 - Cache cold starts now honor the existing 15-minute TTL: a fresh cached
@@ -155,6 +155,8 @@ the restored source.
 - Today’s selected-hour hero is an explicit forecast, not a fabricated
   apparent-temperature observation. It retains the selected location’s
   timezone and genuine shared daily values.
+- The first-page unavailable state now plainly identifies a data outage rather
+  than presenting a potentially misleading calm-weather message.
 - Weather models retain Open-Meteo's `utc_offset_seconds` and raw WMO code.
   The header and atmosphere use location-local time for searched cities; WMO 2
   keeps a partly-cloudy scene while WMO 3 uses overcast. Live Tokyo verification

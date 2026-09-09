@@ -52,7 +52,7 @@ class WeatherErrorView extends StatelessWidget {
             Text('WEATHEROS', style: WeatherType.overline),
             const SizedBox(height: WeatherSpacing.space8),
             Text(
-              'The atmosphere is quiet.',
+              'Weather data is unavailable.',
               style: WeatherType.title,
               textAlign: TextAlign.center,
             ),
@@ -62,7 +62,7 @@ class WeatherErrorView extends StatelessWidget {
             WeatherPlatformButton(
               variant: WeatherButtonVariant.primary,
               onPressed: onRetry,
-              child: const Text('Retry Telemetry'),
+              child: const Text('Try again'),
             ),
           ],
         ),

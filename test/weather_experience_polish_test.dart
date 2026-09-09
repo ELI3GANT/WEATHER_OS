@@ -5,6 +5,7 @@ import 'package:weather_os/features/weather/models/condition_fixtures.dart';
 import 'package:weather_os/features/weather/models/weather_atmosphere_state.dart';
 import 'package:weather_os/features/weather/widgets/current_conditions_hero.dart';
 import 'package:weather_os/features/weather/widgets/weather_atmosphere.dart';
+import 'package:weather_os/features/weather/widgets/weather_status_view.dart';
 
 void main() {
   group('WeatherAtmosphereState - Condition & Presentation Derivations', () {
@@ -236,6 +237,27 @@ void main() {
 
       expect(find.text('Forecast for 3 PM'), findsOneWidget);
       expect(find.textContaining('Feels like'), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('WeatherErrorView never presents an outage as calm weather', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: WeatherTheme.dark,
+          home: Scaffold(
+            body: WeatherErrorView(
+              message: 'Weather data is temporarily unavailable.',
+              onRetry: () {},
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Weather data is unavailable.'), findsOneWidget);
+      expect(find.text('Try again'), findsOneWidget);
+      expect(find.text('The atmosphere is quiet.'), findsNothing);
       expect(tester.takeException(), isNull);
     });
   });
