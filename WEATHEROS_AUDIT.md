@@ -130,7 +130,7 @@ the restored source.
 - The parser now reads Open-Meteo `current_units.visibility`: that Boston value
   correctly becomes 12.49 mi rather than 40.98 mi. Regression coverage handles
   both feet and metres.
-- The restored app has passed all 56 current non-golden tests covering startup,
+- The restored app has passed all 57 current non-golden tests covering startup,
   current conditions, location switching and dialog entry, provider refresh,
   accessibility layout, UI polish, cache behavior, and Open-Meteo parsing.
 - Cache cold starts now honor the existing 15-minute TTL: a fresh cached
