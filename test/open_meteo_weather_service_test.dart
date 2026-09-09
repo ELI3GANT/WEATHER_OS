@@ -127,6 +127,41 @@ void main() {
       expect(model.hourly.first.temperature, 70);
       expect(model.hourly[1].timeLabel, '10 AM');
     });
+
+    test('converts visibility using the response unit metadata', () {
+      final basePayload = <String, dynamic>{
+        'current': <String, dynamic>{
+          'temperature_2m': 70,
+          'weather_code': 0,
+          'visibility': 65944.884,
+        },
+        'daily': <String, dynamic>{
+          'temperature_2m_max': <num>[75],
+          'temperature_2m_min': <num>[60],
+        },
+        'hourly': <String, dynamic>{
+          'time': <String>['2026-08-20T12:00'],
+          'temperature_2m': <num>[70],
+          'weather_code': <num>[0],
+        },
+      };
+
+      final feet = WeatherModel.fromOpenMeteoJson(<String, dynamic>{
+        ...basePayload,
+        'current_units': <String, dynamic>{'visibility': 'ft'},
+      });
+      final metres = WeatherModel.fromOpenMeteoJson(<String, dynamic>{
+        ...basePayload,
+        'current': <String, dynamic>{
+          ...(basePayload['current'] as Map<String, dynamic>),
+          'visibility': 20100,
+        },
+        'current_units': <String, dynamic>{'visibility': 'm'},
+      });
+
+      expect(feet.visibilityMiles, closeTo(12.49, 0.01));
+      expect(metres.visibilityMiles, closeTo(12.49, 0.01));
+    });
   });
 
   group('OpenMeteoWeatherService', () {

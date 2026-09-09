@@ -68,7 +68,7 @@ _Last updated: 2026-09-08. This is a living audit; device conclusions are only m
 
 - `ce2b60a` adds a release-mode **Beta** build configuration and shared **WeatherOS Beta** Xcode scheme. Its bundle ID is `tech.onlytrueperspective.weatheros.beta` and its home-screen display name is `WeatherOS Beta`; production Debug/Profile/Release configurations retain `tech.onlytrueperspective.weatheros` and `WeatherOS`.
 - The Beta configuration is a second configuration of the existing Runner target, not a duplicate target. It uses the same Flutter source, assets, pre-Flagship UI, iOS 15 deployment target, and automatic signing team. It does not enable App Groups, widgets, watchOS, push, or background capabilities.
-- Both repository-root and legacy `ios/` Xcode Cloud post-clone scripts pin Flutter 3.47.2. A beta workflow can set `WEATHEROS_BETA_BUILD=1`; the script then feeds Xcode Cloud's monotonically increasing `CI_BUILD_NUMBER` to Flutter so TestFlight builds do not reuse a build number.
+- Both repository-root and legacy `ios/` Xcode Cloud post-clone scripts pin Flutter 3.47.2. A beta workflow can set `WEATHEROS_BETA_BUILD=1`; the script then feeds Xcode Cloud's monotonically increasing `CI_BUILD_NUMBER` to Flutter so TestFlight builds do not reuse a build number. `pubspec.yaml` remains at the production baseline (`1.0.6+20`); only the Beta cloud archive receives the incremented build number.
 - Apple Developer now has explicit Beta App ID `tech.onlytrueperspective.weatheros.beta` (`WeatherOS Beta`) under team `3MVY7ZJ9NN`. It was registered with no optional App Services enabled; the production WeatherOS identifier was verified unchanged.
 - App Store Connect now has the separate **WeatherOS Beta** iOS app record (Apple app ID `6810007458`, SKU `weatheros-beta`, initial status **Prepare for Submission**). No build has been uploaded, no public App Store submission was made, and no credentials, provisioning profiles, certificates, or API keys are stored here.
 
@@ -123,14 +123,22 @@ the restored source.
   now retained as inches instead of being converted a second time. The focused
   Open-Meteo/provider test file passes (6 tests).
 - A live Open-Meteo request using the app's production query shape returned
-  valid current, hourly, and daily payloads, including an inch-valued daily
-  precipitation sum.
-- The restored app has passed 30 focused non-golden tests covering startup,
+  valid current, hourly, and daily payloads. The September 8 Boston sample
+  returned Fahrenheit temperatures, mph wind, inch precipitation, hPa pressure,
+  America/New_York timestamps, and `visibility=65944.884 ft`.
+- The parser now reads Open-Meteo `current_units.visibility`: that Boston value
+  correctly becomes 12.49 mi rather than 40.98 mi. Regression coverage handles
+  both feet and metres.
+- The restored app has passed all 49 current non-golden tests covering startup,
   current conditions, location switching and dialog entry, provider refresh,
-  accessibility layout, UI polish, and Open-Meteo parsing.
+  accessibility layout, UI polish, cache behavior, and Open-Meteo parsing.
 - Cache cold starts now honor the existing 15-minute TTL: a fresh cached
   forecast supports offline startup, while an expired cache enters the existing
   unavailable/error state. Focused parser/provider coverage is now 12 tests.
+- The cache now stores a rounded coordinate identity with its payload. An
+  offline cold start only shows it when the resolved location matches, preventing
+  a previous searched city from masquerading as the current city. Legacy cache
+  entries without an identity are safely ignored.
 - Hourly selection now uses Open-Meteo's location-local `current.time`, rather
   than the host clock, so a searched city in another timezone does not skip
   upcoming hourly rows.
@@ -157,9 +165,11 @@ the restored source.
 - **Search:** `LocationSearchService` calls Open-Meteo geocoding, validates the
   first result, then passes it to `WeatherProvider.setLocation`.
 - **Open-Meteo:** the service requests imperial weather fields; the model
-  converts pressure and visibility once and retains inch precipitation.
-- **Cache:** one weather payload/timestamp is stored in SharedPreferences;
-  freshness/location identity are missing (WOS-002/WOS-003).
+  converts pressure and response-labelled visibility once and retains inch
+  precipitation.
+- **Cache:** SharedPreferences stores one payload with a timestamp and rounded
+  coordinate identity; it is used for up to 15 minutes only when it matches the
+  resolved request.
 - **State:** `WeatherProvider` owns generation-safe loads, error/offline state,
   coordinates, cache hydration, and optional widget/watch export.
 - **Today/hourly/weekly:** `WeatherHomeScreen` composes the pre-Flagship hero,

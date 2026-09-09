@@ -76,7 +76,11 @@ void main() {
 
   test('uses a fresh cache when offline at cold start', () async {
     const cache = WeatherCacheService();
-    await cache.saveWeather(MockWeather.newYorkRain);
+    await cache.saveWeather(
+      MockWeather.newYorkRain,
+      latitude: 40.7128,
+      longitude: -74.0060,
+    );
     final provider = WeatherProvider(
       repository: const WeatherRepository(service: _FailingWeatherService()),
       cacheService: cache,
@@ -112,6 +116,33 @@ void main() {
     expect(provider.state, WeatherLoadState.error);
     expect(provider.weather, isNull);
   });
+
+  test(
+    'does not hydrate another location\'s fresh cache when offline',
+    () async {
+      const cache = WeatherCacheService();
+      await cache.saveWeather(
+        MockWeather.newYorkRain,
+        latitude: 40.7128,
+        longitude: -74.0060,
+      );
+      final provider = WeatherProvider(
+        repository: const WeatherRepository(service: _FailingWeatherService()),
+        cacheService: cache,
+        telemetryExporter: _discardTelemetry,
+      );
+      addTearDown(provider.dispose);
+
+      await provider.load(
+        latitude: 34.0522,
+        longitude: -118.2437,
+        locationName: 'Los Angeles, California',
+      );
+
+      expect(provider.state, WeatherLoadState.error);
+      expect(provider.weather, isNull);
+    },
+  );
 }
 
 Future<void> _discardTelemetry(WeatherModel _) async {}

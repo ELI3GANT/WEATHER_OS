@@ -66,22 +66,6 @@ class WeatherProvider extends ChangeNotifier {
         : WeatherLoadState.loading;
     _errorMessage = null;
 
-    // Hydrate from offline cache immediately on cold start
-    if (_weather == null && cacheService != null) {
-      final isFresh = await cacheService!.isCacheFresh();
-      if (isFresh) {
-        final cached = await cacheService!.getCachedWeather();
-        if (cached != null && !_isDisposed && generation == _loadGeneration) {
-          _weather = cached;
-          _state = WeatherLoadState.loaded;
-          _isOffline = true;
-          notifyListeners();
-        }
-      }
-    }
-
-    if (_isDisposed || generation != _loadGeneration) return;
-
     var targetLat = latitude ?? _latitude;
     var targetLong = longitude ?? _longitude;
     var targetName = locationName ?? _locationName;
@@ -95,6 +79,28 @@ class WeatherProvider extends ChangeNotifier {
         targetName = loc.locationName;
       }
     }
+
+    // Only hydrate a cache that was saved for this exact weather location.
+    // A global cache can otherwise display a previous searched city as if it
+    // were the user's current location during an offline startup.
+    if (_weather == null && cacheService != null) {
+      final isFresh = await cacheService!.isCacheFresh();
+      final isMatchingLocation = await cacheService!.isCachedFor(
+        targetLat,
+        targetLong,
+      );
+      if (isFresh && isMatchingLocation) {
+        final cached = await cacheService!.getCachedWeather();
+        if (cached != null && !_isDisposed && generation == _loadGeneration) {
+          _weather = cached;
+          _state = WeatherLoadState.loaded;
+          _isOffline = true;
+          notifyListeners();
+        }
+      }
+    }
+
+    if (_isDisposed || generation != _loadGeneration) return;
 
     try {
       final fresh = await repository.getCurrentWeather(
@@ -111,7 +117,11 @@ class WeatherProvider extends ChangeNotifier {
         _isOffline = false;
         _errorMessage = null;
         if (cacheService != null) {
-          await cacheService!.saveWeather(fresh);
+          await cacheService!.saveWeather(
+            fresh,
+            latitude: targetLat,
+            longitude: targetLong,
+          );
         }
         unawaited(_exportTelemetrySafely(fresh));
       }

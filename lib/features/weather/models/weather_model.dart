@@ -92,39 +92,38 @@ class WeatherModel {
 
     final temperatureValue = (current['temperature_2m'] as num?)?.toDouble();
     if (temperatureValue == null || !temperatureValue.isFinite) {
-      throw const FormatException('Weather response is missing current temperature.');
+      throw const FormatException(
+        'Weather response is missing current temperature.',
+      );
     }
     final temp = temperatureValue;
     final feelsLike =
         (current['apparent_temperature'] as num?)?.toDouble() ?? temp;
     final weatherCode = (current['weather_code'] as num?)?.toInt();
-    final humidity =
-        (current['relative_humidity_2m'] as num?)?.round() ?? 50;
-    final windSpeed =
-        (current['wind_speed_10m'] as num?)?.toDouble() ?? 0.0;
+    final humidity = (current['relative_humidity_2m'] as num?)?.round() ?? 50;
+    final windSpeed = (current['wind_speed_10m'] as num?)?.toDouble() ?? 0.0;
     final windDirection =
         (current['wind_direction_10m'] as num?)?.toDouble() ?? 112.0;
 
     final rawPressure =
         (current['surface_pressure'] as num?)?.toDouble() ?? 1013.25;
     // Open-Meteo returns hPa by default (1 hPa ≈ 0.02953 inHg). Convert if > 100.
-    final pressureInHg =
-        rawPressure > 100 ? rawPressure * 0.02953 : rawPressure;
+    final pressureInHg = rawPressure > 100
+        ? rawPressure * 0.02953
+        : rawPressure;
 
-    final dailyMaxList =
-        (daily['temperature_2m_max'] as List<dynamic>?)?.cast<num>();
-    final dailyMinList =
-        (daily['temperature_2m_min'] as List<dynamic>?)?.cast<num>();
-    final dailyUvList =
-        (daily['uv_index_max'] as List<dynamic>?)?.cast<num>();
-    final dailyRainList =
-        (daily['precipitation_sum'] as List<dynamic>?)?.cast<num>();
+    final dailyMaxList = (daily['temperature_2m_max'] as List<dynamic>?)
+        ?.cast<num>();
+    final dailyMinList = (daily['temperature_2m_min'] as List<dynamic>?)
+        ?.cast<num>();
+    final dailyUvList = (daily['uv_index_max'] as List<dynamic>?)?.cast<num>();
+    final dailyRainList = (daily['precipitation_sum'] as List<dynamic>?)
+        ?.cast<num>();
     final dailyPrecipProbList =
         (daily['precipitation_probability_max'] as List<dynamic>?)?.cast<num>();
-    final dailySunriseList =
-        (daily['sunrise'] as List<dynamic>?)?.cast<String>();
-    final dailySunsetList =
-        (daily['sunset'] as List<dynamic>?)?.cast<String>();
+    final dailySunriseList = (daily['sunrise'] as List<dynamic>?)
+        ?.cast<String>();
+    final dailySunsetList = (daily['sunset'] as List<dynamic>?)?.cast<String>();
 
     if (dailyMaxList == null ||
         dailyMaxList.isEmpty ||
@@ -132,7 +131,9 @@ class WeatherModel {
         dailyMinList == null ||
         dailyMinList.isEmpty ||
         !dailyMinList.first.toDouble().isFinite) {
-      throw const FormatException('Weather response is missing daily temperatures.');
+      throw const FormatException(
+        'Weather response is missing daily temperatures.',
+      );
     }
 
     final high = dailyMaxList.first.toDouble();
@@ -146,7 +147,8 @@ class WeatherModel {
         ? dailyRainList.first.toDouble()
         : 0.80;
     final totalRain = rawDailyRain.isFinite ? rawDailyRain : 0.80;
-    final precipProb = (dailyPrecipProbList != null && dailyPrecipProbList.isNotEmpty)
+    final precipProb =
+        (dailyPrecipProbList != null && dailyPrecipProbList.isNotEmpty)
         ? dailyPrecipProbList.first.round().clamp(0, 100)
         : 90;
 
@@ -187,18 +189,20 @@ class WeatherModel {
         (hourly['weather_code'] as List<dynamic>?)?.cast<num>() ?? <num>[];
     final hourlyPrecipProbs =
         (hourly['precipitation_probability'] as List<dynamic>?)?.cast<num>() ??
-            <num>[];
+        <num>[];
 
     if (hourlyTimes.isEmpty || hourlyTemps.isEmpty || hourlyCodes.isEmpty) {
-      throw const FormatException('Weather response is missing hourly forecast data.');
+      throw const FormatException(
+        'Weather response is missing hourly forecast data.',
+      );
     }
 
     final hourlyList = <HourlyForecast>[];
     // With `timezone=auto`, Open-Meteo timestamps are local wall-clock times
     // for the forecast location. Anchor selection to `current.time` rather
     // than this device's timezone so searched cities do not skip hours.
-    final now = DateTime.tryParse(current['time'] as String? ?? '') ??
-        DateTime.now();
+    final now =
+        DateTime.tryParse(current['time'] as String? ?? '') ?? DateTime.now();
     var startIndex = 0;
     for (var i = 0; i < hourlyTimes.length; i++) {
       final parsed = DateTime.tryParse(hourlyTimes[i]);
@@ -226,10 +230,12 @@ class WeatherModel {
       final timeLabel = isNow
           ? 'NOW'
           : (parsedTime != null ? _formatHour(parsedTime.hour) : '+$i h');
-      final hTemp =
-          idx < hourlyTemps.length ? hourlyTemps[idx].toDouble() : temp;
-      final hCode =
-          idx < hourlyCodes.length ? hourlyCodes[idx].toInt() : weatherCode;
+      final hTemp = idx < hourlyTemps.length
+          ? hourlyTemps[idx].toDouble()
+          : temp;
+      final hCode = idx < hourlyCodes.length
+          ? hourlyCodes[idx].toInt()
+          : weatherCode;
       final hPrecipProb = idx < hourlyPrecipProbs.length
           ? hourlyPrecipProbs[idx].round()
           : (precipProb > 50 ? 70 : 20);
@@ -287,33 +293,34 @@ class WeatherModel {
         final dayLabel = i == 0
             ? 'Today'
             : (i == 1
-                ? 'Tomorrow'
-                : (dDate != null
-                    ? weekdayNames[dDate.weekday - 1]
-                    : 'Day $i'));
+                  ? 'Tomorrow'
+                  : (dDate != null
+                        ? weekdayNames[dDate.weekday - 1]
+                        : 'Day $i'));
 
         final dHigh = dailyMaxList[i].toDouble();
         final dLow = i < dailyMinList.length
             ? dailyMinList[i].toDouble()
             : dHigh - 12.0;
-        final dCode = (dailyWeatherCodes.isNotEmpty &&
-                i < dailyWeatherCodes.length)
+        final dCode =
+            (dailyWeatherCodes.isNotEmpty && i < dailyWeatherCodes.length)
             ? dailyWeatherCodes[i].toInt()
             : (i == 0 ? weatherCode : null);
         final dCondition = WeatherCondition.fromWmoCode(dCode);
-        final dPrecip = (dailyPrecipProbList != null &&
-                i < dailyPrecipProbList.length)
+        final dPrecip =
+            (dailyPrecipProbList != null && i < dailyPrecipProbList.length)
             ? dailyPrecipProbList[i].round()
             : (dCondition == WeatherCondition.rain
-                ? 70
-                : (dCondition == WeatherCondition.storm ? 85 : 10));
+                  ? 70
+                  : (dCondition == WeatherCondition.storm ? 85 : 10));
         final dUv = (dailyUvList != null && i < dailyUvList.length)
             ? dailyUvList[i].round()
             : uvIndex;
         final dRain = (dailyRainList != null && i < dailyRainList.length)
             ? dailyRainList[i].toDouble()
             : 0.0;
-        final dSunrise = (dailySunriseList != null && i < dailySunriseList.length)
+        final dSunrise =
+            (dailySunriseList != null && i < dailySunriseList.length)
             ? _formatDateTimeString(dailySunriseList[i])
             : null;
         final dSunset = (dailySunsetList != null && i < dailySunsetList.length)
@@ -330,7 +337,10 @@ class WeatherModel {
             precipChance: dPrecip,
             uvIndex: dUv,
             totalRainInches:
-                double.tryParse(dRain.isFinite ? dRain.toStringAsFixed(2) : '0.0') ?? 0.0,
+                double.tryParse(
+                  dRain.isFinite ? dRain.toStringAsFixed(2) : '0.0',
+                ) ??
+                0.0,
             sunrise: dSunrise,
             sunset: dSunset,
           ),
@@ -352,8 +362,8 @@ class WeatherModel {
             condition: i == 0
                 ? cond
                 : (i % 2 == 0
-                    ? WeatherCondition.sunny
-                    : WeatherCondition.cloudy),
+                      ? WeatherCondition.sunny
+                      : WeatherCondition.cloudy),
             high: high + (i % 3 == 0 ? 2 : -2),
             low: low + (i % 2 == 0 ? 1 : -1),
             precipChance: i == 0 ? precipProb : (i * 10) % 40,
@@ -376,11 +386,15 @@ class WeatherModel {
       pressureInHg: double.tryParse(pressureInHg.toStringAsFixed(2)) ?? 30.0,
       precipChance: precipProb,
       totalRainInches: double.tryParse(totalRain.toStringAsFixed(2)) ?? 0.0,
-      // Open-Meteo visibility is meters. Convert to miles only at this
-      // provider boundary; retain the legacy fallback for incomplete payloads.
-      visibilityMiles:
-          ((current['visibility'] as num?)?.toDouble() ?? 12874.752) /
-              1609.344,
+      // Open-Meteo's visibility unit follows its response configuration. The
+      // imperial forecast request currently returns feet, while older and
+      // mocked payloads can use metres. Read `current_units` rather than
+      // assuming a unit and overstating visibility by 3.28x.
+      visibilityMiles: _visibilityMiles(
+        (current['visibility'] as num?)?.toDouble(),
+        (json['current_units'] as Map<String, dynamic>?)?['visibility']
+            as String?,
+      ),
       windDirectionCompass: _degreesToCompass(windDirection),
       windBearingDegrees: windDirection,
       sunriseTime: sunriseStr,
@@ -426,102 +440,114 @@ class WeatherModel {
     );
   }
 
+  static double _visibilityMiles(double? visibility, String? unit) {
+    final value = visibility ?? 12874.752;
+    return switch (unit) {
+      'ft' => value / 5280,
+      'm' || null => value / 1609.344,
+      _ => value / 1609.344,
+    };
+  }
+
   Map<String, dynamic> toJson() => <String, dynamic>{
-        'location': location,
-        'temperature': temperature,
-        'condition': condition.name,
-        'feelsLike': feelsLike,
-        'high': high,
-        'low': low,
-        'humidity': humidity,
-        'windSpeedMph': windSpeedMph,
-        'uvIndex': uvIndex,
-        'pressureInHg': pressureInHg,
-        'precipChance': precipChance,
-        'totalRainInches': totalRainInches,
-        'visibilityMiles': visibilityMiles,
-        'windDirectionCompass': windDirectionCompass,
-        'windBearingDegrees': windBearingDegrees,
-        'sunriseTime': sunriseTime,
-        'sunsetTime': sunsetTime,
-        'daylightDuration': daylightDuration,
-        'dailySummary': dailySummary,
-        'riskLevel': riskLevel,
-        'severeRisks': severeRisks,
-        'whatToExpect': whatToExpect,
-        'impactScores': impactScores,
-        'hourly': hourly.map((HourlyForecast h) => h.toJson()).toList(),
-        'dailyForecasts':
-            dailyForecasts.map((DailyForecastItem d) => d.toJson()).toList(),
-      };
+    'location': location,
+    'temperature': temperature,
+    'condition': condition.name,
+    'feelsLike': feelsLike,
+    'high': high,
+    'low': low,
+    'humidity': humidity,
+    'windSpeedMph': windSpeedMph,
+    'uvIndex': uvIndex,
+    'pressureInHg': pressureInHg,
+    'precipChance': precipChance,
+    'totalRainInches': totalRainInches,
+    'visibilityMiles': visibilityMiles,
+    'windDirectionCompass': windDirectionCompass,
+    'windBearingDegrees': windBearingDegrees,
+    'sunriseTime': sunriseTime,
+    'sunsetTime': sunsetTime,
+    'daylightDuration': daylightDuration,
+    'dailySummary': dailySummary,
+    'riskLevel': riskLevel,
+    'severeRisks': severeRisks,
+    'whatToExpect': whatToExpect,
+    'impactScores': impactScores,
+    'hourly': hourly.map((HourlyForecast h) => h.toJson()).toList(),
+    'dailyForecasts': dailyForecasts
+        .map((DailyForecastItem d) => d.toJson())
+        .toList(),
+  };
 
   factory WeatherModel.fromJson(Map<String, dynamic> json) => WeatherModel(
-        location: json['location'] as String? ?? 'Current Location',
-        temperature: (json['temperature'] as num?)?.toDouble() ?? 70.0,
-        condition: WeatherCondition.values.firstWhere(
-          (WeatherCondition c) => c.name == json['condition'],
-          orElse: () => WeatherCondition.cloudy,
-        ),
-        feelsLike: (json['feelsLike'] as num?)?.toDouble() ?? 70.0,
-        high: (json['high'] as num?)?.toDouble() ?? 75.0,
-        low: (json['low'] as num?)?.toDouble() ?? 60.0,
-        humidity: (json['humidity'] as num?)?.round() ?? 50,
-        windSpeedMph: (json['windSpeedMph'] as num?)?.toDouble() ?? 10.0,
-        uvIndex: (json['uvIndex'] as num?)?.round() ?? 3,
-        pressureInHg: (json['pressureInHg'] as num?)?.toDouble() ?? 30.0,
-        precipChance: (json['precipChance'] as num?)?.round() ?? 90,
-        totalRainInches:
-            (json['totalRainInches'] as num?)?.toDouble() ?? 0.80,
-        visibilityMiles:
-            (json['visibilityMiles'] as num?)?.toDouble() ?? 8.0,
-        windDirectionCompass:
-            json['windDirectionCompass'] as String? ?? 'ESE',
-        windBearingDegrees:
-            (json['windBearingDegrees'] as num?)?.toDouble() ?? 112.0,
-        sunriseTime: json['sunriseTime'] as String? ?? '5:36 AM',
-        sunsetTime: json['sunsetTime'] as String? ?? '8:08 PM',
-        daylightDuration: json['daylightDuration'] as String? ?? '14h 32m',
-        dailySummary: json['dailySummary'] as String? ??
-            'Rainy with a high chance of showers and thunderstorms.',
-        riskLevel: json['riskLevel'] as String? ?? 'LOW RISK',
-        severeRisks: (json['severeRisks'] as Map<String, dynamic>?)?.map(
-              (k, v) => MapEntry(k, (v as num).toDouble()),
-            ) ??
-            const <String, double>{
-              'rain': 0.85,
-              'thunderstorms': 0.55,
-              'flooding': 0.50,
-              'wind': 0.25,
-              'hail': 0.20,
-              'tornado': 0.05,
-            },
-        whatToExpect: (json['whatToExpect'] as List<dynamic>?)?.cast<String>() ??
-            const <String>[
-              'Bring an umbrella',
-              'Slick roads possible',
-              'Thunderstorms this afternoon',
-              'Heavy rain around midday',
-              'Plan for delays',
-            ],
-        impactScores: (json['impactScores'] as Map<String, dynamic>?)?.map(
-              (k, v) => MapEntry(k, (v as num).round()),
-            ) ??
-            const <String, int>{
-              'Driving': 80,
-              'Outdoor Plans': 30,
-              'Construction': 35,
-              'Running': 20,
-              'Flying Drones': 15,
-              'Photography': 25,
-            },
-        hourly: ((json['hourly'] as List<dynamic>?) ?? <dynamic>[])
-            .map((dynamic e) => HourlyForecast.fromJson(e as Map<String, dynamic>))
-            .toList(),
-        dailyForecasts: ((json['dailyForecasts'] as List<dynamic>?) ?? <dynamic>[])
-            .map((dynamic e) =>
-                DailyForecastItem.fromJson(e as Map<String, dynamic>))
-            .toList(),
-      );
+    location: json['location'] as String? ?? 'Current Location',
+    temperature: (json['temperature'] as num?)?.toDouble() ?? 70.0,
+    condition: WeatherCondition.values.firstWhere(
+      (WeatherCondition c) => c.name == json['condition'],
+      orElse: () => WeatherCondition.cloudy,
+    ),
+    feelsLike: (json['feelsLike'] as num?)?.toDouble() ?? 70.0,
+    high: (json['high'] as num?)?.toDouble() ?? 75.0,
+    low: (json['low'] as num?)?.toDouble() ?? 60.0,
+    humidity: (json['humidity'] as num?)?.round() ?? 50,
+    windSpeedMph: (json['windSpeedMph'] as num?)?.toDouble() ?? 10.0,
+    uvIndex: (json['uvIndex'] as num?)?.round() ?? 3,
+    pressureInHg: (json['pressureInHg'] as num?)?.toDouble() ?? 30.0,
+    precipChance: (json['precipChance'] as num?)?.round() ?? 90,
+    totalRainInches: (json['totalRainInches'] as num?)?.toDouble() ?? 0.80,
+    visibilityMiles: (json['visibilityMiles'] as num?)?.toDouble() ?? 8.0,
+    windDirectionCompass: json['windDirectionCompass'] as String? ?? 'ESE',
+    windBearingDegrees:
+        (json['windBearingDegrees'] as num?)?.toDouble() ?? 112.0,
+    sunriseTime: json['sunriseTime'] as String? ?? '5:36 AM',
+    sunsetTime: json['sunsetTime'] as String? ?? '8:08 PM',
+    daylightDuration: json['daylightDuration'] as String? ?? '14h 32m',
+    dailySummary:
+        json['dailySummary'] as String? ??
+        'Rainy with a high chance of showers and thunderstorms.',
+    riskLevel: json['riskLevel'] as String? ?? 'LOW RISK',
+    severeRisks:
+        (json['severeRisks'] as Map<String, dynamic>?)?.map(
+          (k, v) => MapEntry(k, (v as num).toDouble()),
+        ) ??
+        const <String, double>{
+          'rain': 0.85,
+          'thunderstorms': 0.55,
+          'flooding': 0.50,
+          'wind': 0.25,
+          'hail': 0.20,
+          'tornado': 0.05,
+        },
+    whatToExpect:
+        (json['whatToExpect'] as List<dynamic>?)?.cast<String>() ??
+        const <String>[
+          'Bring an umbrella',
+          'Slick roads possible',
+          'Thunderstorms this afternoon',
+          'Heavy rain around midday',
+          'Plan for delays',
+        ],
+    impactScores:
+        (json['impactScores'] as Map<String, dynamic>?)?.map(
+          (k, v) => MapEntry(k, (v as num).round()),
+        ) ??
+        const <String, int>{
+          'Driving': 80,
+          'Outdoor Plans': 30,
+          'Construction': 35,
+          'Running': 20,
+          'Flying Drones': 15,
+          'Photography': 25,
+        },
+    hourly: ((json['hourly'] as List<dynamic>?) ?? <dynamic>[])
+        .map((dynamic e) => HourlyForecast.fromJson(e as Map<String, dynamic>))
+        .toList(),
+    dailyForecasts: ((json['dailyForecasts'] as List<dynamic>?) ?? <dynamic>[])
+        .map(
+          (dynamic e) => DailyForecastItem.fromJson(e as Map<String, dynamic>),
+        )
+        .toList(),
+  );
 
   static String? _formatDateTimeString(String? isoStr) {
     if (isoStr == null) return null;
@@ -545,8 +571,22 @@ class WeatherModel {
 
   static String _degreesToCompass(double degrees) {
     const directions = <String>[
-      'N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE',
-      'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'
+      'N',
+      'NNE',
+      'NE',
+      'ENE',
+      'E',
+      'ESE',
+      'SE',
+      'SSE',
+      'S',
+      'SSW',
+      'SW',
+      'WSW',
+      'W',
+      'WNW',
+      'NW',
+      'NNW',
     ];
     final normalized = (degrees % 360 + 360) % 360;
     final index = ((normalized + 11.25) / 22.5).floor() % directions.length;
