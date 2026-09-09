@@ -84,13 +84,15 @@ class WeatherProvider extends ChangeNotifier {
     // A global cache can otherwise display a previous searched city as if it
     // were the user's current location during an offline startup.
     if (_weather == null && cacheService != null) {
-      final isFresh = await cacheService!.isCacheFresh();
-      final isMatchingLocation = await cacheService!.isCachedFor(
-        targetLat,
-        targetLong,
+      final isFresh = await cacheService!.isCacheFresh(
+        latitude: targetLat,
+        longitude: targetLong,
       );
-      if (isFresh && isMatchingLocation) {
-        final cached = await cacheService!.getCachedWeather();
+      if (isFresh) {
+        final cached = await cacheService!.getCachedWeather(
+          latitude: targetLat,
+          longitude: targetLong,
+        );
         if (cached != null && !_isDisposed && generation == _loadGeneration) {
           _weather = cached;
           _state = WeatherLoadState.loaded;

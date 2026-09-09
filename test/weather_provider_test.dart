@@ -96,17 +96,20 @@ void main() {
   });
 
   test('rejects an expired cache when offline at cold start', () async {
-    SharedPreferences.setMockInitialValues(<String, Object>{
-      'weatheros_cached_weather_payload': jsonEncode(
-        MockWeather.newYorkRain.toJson(),
-      ),
-      'weatheros_cached_timestamp': DateTime.now()
+    const cache = WeatherCacheService();
+    await cache.saveWeather(
+      MockWeather.newYorkRain,
+      latitude: 40.7128,
+      longitude: -74.0060,
+    );
+    await _setCacheTimestamp(
+      DateTime.now()
           .subtract(const Duration(minutes: 16))
           .millisecondsSinceEpoch,
-    });
+    );
     final provider = WeatherProvider(
       repository: const WeatherRepository(service: _FailingWeatherService()),
-      cacheService: const WeatherCacheService(),
+      cacheService: cache,
       telemetryExporter: _discardTelemetry,
     );
     addTearDown(provider.dispose);
@@ -118,20 +121,19 @@ void main() {
   });
 
   test('rejects malformed cache rather than inventing conditions', () async {
-    SharedPreferences.setMockInitialValues(<String, Object>{
-      'weatheros_cached_weather_payload': jsonEncode(<String, dynamic>{
-        'location': 'New York',
-        'temperature': 70,
-      }),
-      'weatheros_cached_timestamp': DateTime.now().millisecondsSinceEpoch,
-      'weatheros_cached_location': WeatherCacheService.locationKey(
-        40.7128,
-        -74.0060,
-      ),
+    const cache = WeatherCacheService();
+    await cache.saveWeather(
+      MockWeather.newYorkRain,
+      latitude: 40.7128,
+      longitude: -74.0060,
+    );
+    await _setCachedPayload(<String, dynamic>{
+      'location': 'New York',
+      'temperature': 70,
     });
     final provider = WeatherProvider(
       repository: const WeatherRepository(service: _FailingWeatherService()),
-      cacheService: const WeatherCacheService(),
+      cacheService: cache,
       telemetryExporter: _discardTelemetry,
     );
     addTearDown(provider.dispose);
@@ -143,21 +145,20 @@ void main() {
   });
 
   test('rejects a cache with malformed nested forecast entries', () async {
+    const cache = WeatherCacheService();
+    await cache.saveWeather(
+      MockWeather.newYorkRain,
+      latitude: 40.7128,
+      longitude: -74.0060,
+    );
     final payload = MockWeather.newYorkRain.toJson()
       ..['hourly'] = <Map<String, dynamic>>[
         <String, dynamic>{'timeLabel': 'NOW'},
       ];
-    SharedPreferences.setMockInitialValues(<String, Object>{
-      'weatheros_cached_weather_payload': jsonEncode(payload),
-      'weatheros_cached_timestamp': DateTime.now().millisecondsSinceEpoch,
-      'weatheros_cached_location': WeatherCacheService.locationKey(
-        40.7128,
-        -74.0060,
-      ),
-    });
+    await _setCachedPayload(payload);
     final provider = WeatherProvider(
       repository: const WeatherRepository(service: _FailingWeatherService()),
-      cacheService: const WeatherCacheService(),
+      cacheService: cache,
       telemetryExporter: _discardTelemetry,
     );
     addTearDown(provider.dispose);
@@ -194,6 +195,53 @@ void main() {
       expect(provider.weather, isNull);
     },
   );
+
+  test('keeps fresh offline caches independently per location', () async {
+    const cache = WeatherCacheService();
+    await cache.saveWeather(
+      MockWeather.newYorkRain,
+      latitude: 40.7128,
+      longitude: -74.0060,
+    );
+    await cache.saveWeather(
+      MockWeather.newYorkRain,
+      latitude: 34.0522,
+      longitude: -118.2437,
+    );
+
+    expect(
+      await cache.isCacheFresh(latitude: 40.7128, longitude: -74.0060),
+      isTrue,
+    );
+    expect(
+      await cache.isCacheFresh(latitude: 34.0522, longitude: -118.2437),
+      isTrue,
+    );
+    expect(
+      await cache.getCachedWeather(latitude: 40.7128, longitude: -74.0060),
+      isNotNull,
+    );
+    expect(
+      await cache.getCachedWeather(latitude: 34.0522, longitude: -118.2437),
+      isNotNull,
+    );
+  });
+}
+
+Future<void> _setCachedPayload(Map<String, dynamic> payload) async {
+  final prefs = await SharedPreferences.getInstance();
+  final key = prefs.getKeys().firstWhere(
+    (key) => key.startsWith('weatheros_cached_weather_payload_'),
+  );
+  await prefs.setString(key, jsonEncode(payload));
+}
+
+Future<void> _setCacheTimestamp(int timestamp) async {
+  final prefs = await SharedPreferences.getInstance();
+  final key = prefs.getKeys().firstWhere(
+    (key) => key.startsWith('weatheros_cached_timestamp_'),
+  );
+  await prefs.setInt(key, timestamp);
 }
 
 Future<void> _discardTelemetry(WeatherModel _) async {}

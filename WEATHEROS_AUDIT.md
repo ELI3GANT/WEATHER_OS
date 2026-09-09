@@ -136,10 +136,10 @@ the restored source.
 - Cache cold starts now honor the existing 15-minute TTL: a fresh cached
   forecast supports offline startup, while an expired cache enters the existing
   unavailable/error state. Focused parser/provider coverage is now 12 tests.
-- The cache now stores a rounded coordinate identity with its payload. An
-  offline cold start only shows it when the resolved location matches, preventing
-  a previous searched city from masquerading as the current city. Legacy cache
-  entries without an identity are safely ignored.
+- The cache stores independent payload/timestamp pairs by rounded coordinate.
+  An offline cold start only reads the resolved location, so current and searched
+  cities cannot overwrite or masquerade as one another. Legacy unscoped entries
+  are safely ignored.
 - Parser integrity is strict at the live-data boundary: every requested
   current/daily/hourly field must exist, timestamps and array lengths must be
   coherent, and malformed input reaches the existing error state instead of
@@ -183,9 +183,8 @@ the restored source.
 - **Open-Meteo:** the service requests imperial weather fields; the model
   validates queried arrays and normalizes response-labelled metric or imperial
   temperature, wind, precipitation, pressure, and visibility once.
-- **Cache:** SharedPreferences stores one payload with a timestamp and rounded
-  coordinate identity; it is used for up to 15 minutes only when it matches the
-  resolved request.
+- **Cache:** SharedPreferences stores independent coordinate-keyed payloads and
+  timestamps; each is used for up to 15 minutes only for its resolved request.
 - **State:** `WeatherProvider` owns generation-safe loads, error/offline state,
   coordinates, cache hydration, and optional widget/watch export.
 - **Today/hourly/weekly:** `WeatherHomeScreen` composes the pre-Flagship hero,
