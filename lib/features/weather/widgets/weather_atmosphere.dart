@@ -164,6 +164,7 @@ class _WeatherAtmosphereState extends State<WeatherAtmosphere>
                         condition: _prevCondition!,
                         period: _prevPeriod!,
                         progress: progress,
+                        useCustomPeriod: widget.customHour != null,
                         atmosphereState: widget.atmosphereState,
                       ),
                       child: const SizedBox.expand(),
@@ -176,6 +177,7 @@ class _WeatherAtmosphereState extends State<WeatherAtmosphere>
                       condition: widget.condition,
                       period: period,
                       progress: progress,
+                      useCustomPeriod: widget.customHour != null,
                       atmosphereState: widget.atmosphereState,
                     ),
                     child: const SizedBox.expand(),
@@ -195,12 +197,14 @@ class _AtmospherePainter extends CustomPainter {
     required this.condition,
     required this.period,
     required this.progress,
+    required this.useCustomPeriod,
     this.atmosphereState,
   });
 
   final WeatherCondition condition;
   final DayPeriod period;
   final double progress;
+  final bool useCustomPeriod;
   final WeatherAtmosphereState? atmosphereState;
 
   @override
@@ -240,12 +244,18 @@ class _AtmospherePainter extends CustomPainter {
     final modulatedProgress = progress + motionBoost * 0.2;
     canvas.drawRect(bounds, Paint()..shader = _background(bounds, effectiveState));
 
-    final isNight = period == DayPeriod.night ||
-        effectiveState.daylightPhase == DaylightPhase.night;
-    final isDawn = period == DayPeriod.dawn ||
-        effectiveState.daylightPhase == DaylightPhase.dawn;
-    final isSunset = period == DayPeriod.sunset ||
-        effectiveState.daylightPhase == DaylightPhase.sunset;
+    final isNight = useCustomPeriod
+        ? period == DayPeriod.night
+        : period == DayPeriod.night ||
+              effectiveState.daylightPhase == DaylightPhase.night;
+    final isDawn = useCustomPeriod
+        ? period == DayPeriod.dawn
+        : period == DayPeriod.dawn ||
+              effectiveState.daylightPhase == DaylightPhase.dawn;
+    final isSunset = useCustomPeriod
+        ? period == DayPeriod.sunset
+        : period == DayPeriod.sunset ||
+              effectiveState.daylightPhase == DaylightPhase.sunset;
 
     if (isNight) {
       _drawStars(canvas, size, modulatedProgress, effectiveState);
@@ -369,12 +379,15 @@ class _AtmospherePainter extends CustomPainter {
   }
 
   Shader _background(Rect bounds, WeatherAtmosphereState state) {
-    final isNight = period == DayPeriod.night ||
-        state.daylightPhase == DaylightPhase.night;
-    final isDawn = period == DayPeriod.dawn ||
-        state.daylightPhase == DaylightPhase.dawn;
-    final isSunset = period == DayPeriod.sunset ||
-        state.daylightPhase == DaylightPhase.sunset;
+    final isNight = useCustomPeriod
+        ? period == DayPeriod.night
+        : period == DayPeriod.night || state.daylightPhase == DaylightPhase.night;
+    final isDawn = useCustomPeriod
+        ? period == DayPeriod.dawn
+        : period == DayPeriod.dawn || state.daylightPhase == DaylightPhase.dawn;
+    final isSunset = useCustomPeriod
+        ? period == DayPeriod.sunset
+        : period == DayPeriod.sunset || state.daylightPhase == DaylightPhase.sunset;
 
     if (isNight) {
       final nightColors = switch (state.conditionFamily) {
@@ -831,6 +844,7 @@ class _AtmospherePainter extends CustomPainter {
     return condition != oldDelegate.condition ||
         period != oldDelegate.period ||
         progress != oldDelegate.progress ||
+        useCustomPeriod != oldDelegate.useCustomPeriod ||
         atmosphereState != oldDelegate.atmosphereState;
   }
 }

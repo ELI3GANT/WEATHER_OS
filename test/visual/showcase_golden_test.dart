@@ -142,9 +142,14 @@ Future<void> _pumpShowcase(
           disableAnimations: true,
           textScaler: textScaler,
         ),
-        child: WeatherShowcaseScreen(weather: weather, atmosphereHour: 12),
+        child: WeatherShowcaseScreen(
+          weather: weather,
+          atmosphereHour: 12,
+          atmosphereProgress: 0.32,
+        ),
       ),
     ),
   );
+  await tester.pump();
   await tester.pump();
 }

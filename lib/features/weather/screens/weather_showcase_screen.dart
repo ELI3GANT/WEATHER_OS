@@ -15,10 +15,12 @@ class WeatherShowcaseScreen extends StatelessWidget {
     super.key,
     this.weather = MockWeather.newYorkRain,
     this.atmosphereHour,
+    this.atmosphereProgress,
   });
 
   final WeatherModel weather;
   final int? atmosphereHour;
+  final double? atmosphereProgress;
 
   @override
   Widget build(BuildContext context) {
@@ -32,6 +34,7 @@ class WeatherShowcaseScreen extends StatelessWidget {
               child: WeatherAtmosphere(
                 condition: weather.condition,
                 customHour: atmosphereHour,
+                animationProgress: atmosphereProgress,
               ),
             ),
             SafeArea(
